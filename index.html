@@ -17,6 +17,7 @@
             --success-color: #5cb85c;   /* سبز موفقیت */
             --error-color: #d9534f;     /* قرمز خطا */
             --shadow-light: rgba(0, 0, 0, 0.08); /* سایه روشن */
+            --fifty-fifty-color: #ffc107; /* رنگ برای دکمه 50-50 */
         }
 
         body {
@@ -155,54 +156,24 @@
             pointer-events: none; /* Disable clicking after an answer */
             opacity: 0.9;
         }
-        .player-info {
-            display: flex;
-            justify-content: center; /* وسط چین کردن */
-            flex-wrap: wrap;
-            margin-bottom: 30px;
-            gap: 15px; /* فاصله بین آیتم ها */
+        /* Style for 50-50 removed options */
+        .options-list li.removed {
+            opacity: 0.4;
+            pointer-events: none;
+            background-color: #fdfdff; /* Very light, almost white */
+            color: #b0b0b0;
+            text-decoration: line-through;
         }
-        .player-score-item {
-            background-color: #e6f7ff; /* آبی روشن تر */
-            padding: 12px 20px;
-            border-radius: 8px;
-            min-width: 140px;
+        .current-player-display {
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            border: 1px solid #cceeff;
-        }
-        .player-score-item strong {
-            display: block;
-            font-size: 1.2em;
-            margin-bottom: 5px;
-            color: var(--primary-color);
-        }
-        .player-score-item span {
-            font-size: 1.1em;
-            font-weight: 500;
-            color: var(--text-dark);
-        }
-        .current-player-select {
             margin-bottom: 25px;
-            text-align: center;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
         }
-        .current-player-select label {
-            font-size: 1.1em;
-            font-weight: 500;
-            color: var(--text-dark);
-            margin-left: 10px;
-        }
-        .current-player-select select,
-        .quiz-controls select {
-            padding: 10px 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            font-size: 1.05em;
-            min-width: 250px;
-            background-color: var(--background-card);
-            color: var(--text-dark);
-            cursor: pointer;
-        }
+
         .quiz-controls {
             display: flex;
             flex-direction: column;
@@ -216,11 +187,36 @@
             margin-bottom: 5px;
             display: block;
         }
+        .quiz-controls select {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 1.05em;
+            min-width: 250px;
+            background-color: var(--background-card);
+            color: var(--text-dark);
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+        }
         .quiz-controls button#end-quiz-btn {
             background-color: var(--error-color); /* قرمز برای پایان مسابقه */
         }
         .quiz-controls button#end-quiz-btn:hover {
             background-color: #c9302c;
+        }
+        button#fifty-fifty-btn {
+            background-color: var(--fifty-fifty-color);
+            color: var(--text-dark);
+        }
+        button#fifty-fifty-btn:hover {
+            background-color: #e0a800;
+        }
+        button#fifty-fifty-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            color: #666;
+            transform: none;
         }
         #results-section {
             display: none;
@@ -256,6 +252,37 @@
             display: block;
             margin-bottom: 8px;
         }
+
+        /* Player scores at the bottom */
+        #player-scores-display-bottom {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            gap: 15px;
+        }
+        .player-score-item-bottom {
+            background-color: #e6f7ff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            min-width: 140px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid #cceeff;
+        }
+        .player-score-item-bottom strong {
+            display: block;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+        .player-score-item-bottom span {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
     </style>
 </head>
 <body>
@@ -272,19 +299,15 @@
         </div>
 
         <div id="quiz-section">
-            <div class="player-info" id="player-scores-display">
-                </div>
-
-            <div class="current-player-select">
-                <label for="current-player-select">کاربر فعلی برای پاسخ‌دهی:</label>
-                <select id="current-player-select">
-                    </select>
+            <div class="current-player-display">
+                <span id="current-player-name"></span>
             </div>
 
             <div id="questions-container">
                 </div>
 
             <div class="quiz-controls">
+                <button id="fifty-fifty-btn">۵۰-۵۰ (حذف ۲ گزینه غلط)</button>
                 <label for="category-select">انتخاب دسته بندی:</label>
                 <select id="category-select">
                     <option value="">همه دسته‌ها (رندوم)</option>
@@ -301,6 +324,8 @@
                 <button id="next-question-btn">سوال بعدی</button>
                 <button id="end-quiz-btn">پایان مسابقه</button>
             </div>
+            <div id="player-scores-display-bottom">
+                </div>
         </div>
 
         <div id="results-section">
@@ -317,22 +342,24 @@
         const userInputSection = document.getElementById('user-input-section');
         const quizSection = document.getElementById('quiz-section');
         const questionsContainer = document.getElementById('questions-container');
-        const playerScoresDisplay = document.getElementById('player-scores-display');
-        const currentPlayerSelect = document.getElementById('current-player-select');
+        const currentPlayerDisplay = document.getElementById('current-player-name'); // For displaying current player
         const nextQuestionBtn = document.getElementById('next-question-btn');
         const endQuizBtn = document.getElementById('end-quiz-btn');
         const resultsSection = document.getElementById('results-section');
         const resultsList = document.getElementById('results-list');
         const categorySelect = document.getElementById('category-select');
         const difficultySelect = document.getElementById('difficulty-select');
+        const fiftyFiftyBtn = document.getElementById('fifty-fifty-btn'); // 50-50 button
+        const playerScoresDisplayBottom = document.getElementById('player-scores-display-bottom'); // Scores at the bottom
 
         let playerCount = 0;
         const maxPlayers = 10;
         const minPlayers = 2;
         let allQuestions = []; // Stores all parsed questions
         let currentQuestion = null; // Stores the currently displayed question object
-        let players = {}; // Stores player names and their scores: { 'name': { score: 0, correct: 0, wrong: 0 } }
-        let playerNamesArray = []; // To maintain order of player names
+        let players = {}; // Stores player names and their scores: { 'name': { score: 0, correct: 0, wrong: 0, fiftyFiftyUsed: 0 } }
+        let playerNamesArray = []; // To maintain order of player names for circular turn
+        let currentPlayerIndex = 0; // Index of the current player in playerNamesArray
 
         // امتیازدهی برای پاسخ صحیح
         const difficultyPointsCorrect = {
@@ -350,7 +377,6 @@
             'خیلی سخت': -0.5
         };
 
-
         // --- مدیریت ورود نام کاربران ---
 
         function addPlayerInput() {
@@ -360,7 +386,7 @@
                 inputWrapper.className = 'player-input-wrapper';
                 inputWrapper.innerHTML = `
                     <label for="player${playerCount}">نام شرکت‌کننده ${playerCount}:</label>
-                    <input type="text" id="player${playerCount}" placeholder="نام خود را وارد کنید" required>
+                    <input type="text" id="player${playerCount}" required>
                 `;
                 playerInputsDiv.appendChild(inputWrapper);
             }
@@ -400,17 +426,17 @@
                 return;
             }
 
-            // Initialize player scores
+            // Initialize player scores and fiftyFiftyUse count
             players = {}; // Reset players object
             playerNamesArray.forEach(name => {
-                players[name] = { score: 0, correct: 0, wrong: 0 };
+                players[name] = { score: 0, correct: 0, wrong: 0, fiftyFiftyUsed: 0 };
             });
 
             userInputSection.style.display = 'none';
             quizSection.style.display = 'block';
             loadQuestionsAndSetupQuiz();
             updatePlayerScoresDisplay(); // Display initial scores (all 0)
-            populatePlayerSelect(); // Populate the current player dropdown
+            updateCurrentPlayerDisplay(); // Show the first player
         });
 
         // --- مدیریت خواندن و نمایش سوالات ---
@@ -479,6 +505,14 @@
         }
 
         function displayNextQuestion() {
+            // Re-enable 50-50 button for the new question
+            if (currentQuestion && (currentQuestion.difficulty === 'سخت' || currentQuestion.difficulty === 'خیلی سخت')) {
+                 fiftyFiftyBtn.disabled = false;
+            } else {
+                fiftyFiftyBtn.disabled = true; // Disable if not a hard question
+            }
+           
+
             // Apply filters
             const selectedCategory = categorySelect.value;
             const selectedDifficulty = difficultySelect.value;
@@ -492,6 +526,7 @@
             if (filteredQuestions.length === 0) {
                 questionsContainer.innerHTML = "<p>سوالی با این فیلترها پیدا نشد. لطفاً فیلترها را تغییر دهید.</p>";
                 currentQuestion = null;
+                fiftyFiftyBtn.disabled = true; // Disable 50-50 if no question
                 return;
             }
 
@@ -521,6 +556,8 @@
             document.querySelectorAll('.options-list li').forEach(optionLi => {
                 optionLi.addEventListener('click', handleOptionClick);
             });
+            // Update 50-50 button state after loading question
+            updateFiftyFiftyButtonState();
         }
 
         function handleOptionClick(event) {
@@ -528,14 +565,9 @@
             const optionsList = clickedOption.closest('.options-list');
             const questionDifficulty = optionsList.dataset.difficulty;
 
-            const currentPlayerName = currentPlayerSelect.value;
+            const currentPlayerName = playerNamesArray[currentPlayerIndex];
             if (!currentPlayerName) {
-                alert('لطفاً قبل از پاسخ‌دهی، شرکت‌کننده را انتخاب کنید.');
-                // Re-enable options if no player is selected
-                Array.from(optionsList.children).forEach(li => {
-                    li.classList.remove('answered');
-                    li.addEventListener('click', handleOptionClick);
-                });
+                alert('خطا: کاربر فعلی یافت نشد. لطفاً مسابقه را مجدداً شروع کنید.');
                 return;
             }
 
@@ -545,8 +577,7 @@
                 li.removeEventListener('click', handleOptionClick); // Remove listener to prevent re-clicking
             });
             
-            let isCorrect = false;
-            // Find the correct option based on its text content
+            // Find the correct option element
             let correctOptionElement = null;
             Array.from(optionsList.children).forEach(li => {
                 if (currentQuestion && li.textContent.includes(currentQuestion.correctAnswer)) {
@@ -556,7 +587,6 @@
 
             if (clickedOption === correctOptionElement) {
                 clickedOption.classList.add('correct');
-                isCorrect = true;
                 players[currentPlayerName].correct++;
                 players[currentPlayerName].score += difficultyPointsCorrect[questionDifficulty];
             } else {
@@ -568,37 +598,98 @@
                 }
             }
             updatePlayerScoresDisplay();
+            // Move to the next player
+            currentPlayerIndex = (currentPlayerIndex + 1) % playerNamesArray.length;
+            updateCurrentPlayerDisplay(); // Update display for next player
         }
 
         nextQuestionBtn.addEventListener('click', displayNextQuestion);
-
         endQuizBtn.addEventListener('click', showResults);
+        fiftyFiftyBtn.addEventListener('click', handleFiftyFifty);
+
 
         // --- مدیریت امتیازات و انتخاب کاربر ---
 
         function updatePlayerScoresDisplay() {
-            playerScoresDisplay.innerHTML = '';
+            playerScoresDisplayBottom.innerHTML = '';
             playerNamesArray.forEach(name => {
                 const player = players[name];
                 const playerDiv = document.createElement('div');
-                playerDiv.className = 'player-score-item';
-                // نمایش امتیاز با دو رقم اعشار برای نمرات اعشاری
+                playerDiv.className = 'player-score-item-bottom';
+                // نمایش امتیاز بدون اعشار مگر اینکه اعشار داشته باشد
+                const scoreDisplay = (player.score % 1 !== 0) ? player.score.toFixed(1) : player.score;
                 playerDiv.innerHTML = `
                     <strong>${name}</strong><br>
-                    <span>امتیاز: ${player.score.toFixed(1)}</span>
+                    <span>امتیاز: ${scoreDisplay}</span>
                 `;
-                playerScoresDisplay.appendChild(playerDiv);
+                playerScoresDisplayBottom.appendChild(playerDiv);
             });
         }
 
-        function populatePlayerSelect() {
-            currentPlayerSelect.innerHTML = '<option value="">-- انتخاب کنید --</option>';
-            playerNamesArray.forEach(name => {
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                currentPlayerSelect.appendChild(option);
-            });
+        function updateCurrentPlayerDisplay() {
+            if (playerNamesArray.length > 0) {
+                currentPlayerDisplay.textContent = `نوبت: ${playerNamesArray[currentPlayerIndex]}`;
+            } else {
+                currentPlayerDisplay.textContent = '';
+            }
+        }
+
+        // --- قابلیت 50-50 ---
+        function handleFiftyFifty() {
+            if (!currentQuestion) {
+                alert('ابتدا یک سوال نمایش داده شود.');
+                return;
+            }
+
+            const currentPlayerName = playerNamesArray[currentPlayerIndex];
+            if (!currentPlayerName) {
+                alert('خطا: کاربر فعلی یافت نشد. لطفاً مسابقه را مجدداً شروع کنید.');
+                return;
+            }
+
+            const player = players[currentPlayerName];
+
+            // Check if 50-50 can be used
+            if (currentQuestion.difficulty !== 'سخت' && currentQuestion.difficulty !== 'خیلی سخت') {
+                alert('قابلیت ۵۰-۵۰ فقط برای سوالات سخت و خیلی سخت قابل استفاده است.');
+                return;
+            }
+
+            // Apply penalty for 50-50 usage
+            if (player.fiftyFiftyUsed === 0) {
+                player.score -= 0.5; // First time penalty
+            } else {
+                player.score -= 1; // Subsequent times penalty
+            }
+            player.fiftyFiftyUsed++;
+            updatePlayerScoresDisplay(); // Update score display immediately
+
+            // Logic to remove two incorrect options
+            const optionsList = questionsContainer.querySelector('.options-list');
+            const allOptions = Array.from(optionsList.children);
+            const correctAnswerText = currentQuestion.correctAnswer;
+            
+            const incorrectOptions = allOptions.filter(li => !li.textContent.includes(correctAnswerText));
+            
+            // Randomly select 2 incorrect options to remove
+            let removedCount = 0;
+            while (removedCount < 2 && incorrectOptions.length > 0) {
+                const randomIndex = Math.floor(Math.random() * incorrectOptions.length);
+                const optionToRemove = incorrectOptions.splice(randomIndex, 1)[0]; // Remove and get the element
+                if (optionToRemove) {
+                    optionToRemove.classList.add('removed');
+                    removedCount++;
+                }
+            }
+            fiftyFiftyBtn.disabled = true; // Disable 50-50 button after use for this question
+        }
+
+        function updateFiftyFiftyButtonState() {
+             if (currentQuestion && (currentQuestion.difficulty === 'سخت' || currentQuestion.difficulty === 'خیلی سخت')) {
+                 fiftyFiftyBtn.disabled = false;
+            } else {
+                fiftyFiftyBtn.disabled = true;
+            }
         }
 
         // --- نمایش نتایج نهایی ---
@@ -612,11 +703,14 @@
 
             sortedPlayers.forEach(([name, data]) => {
                 const listItem = document.createElement('li');
+                // نمایش امتیاز بدون اعشار مگر اینکه اعشار داشته باشد
+                const scoreDisplay = (data.score % 1 !== 0) ? data.score.toFixed(1) : data.score;
                 listItem.innerHTML = `
                     <strong>${name}:</strong>
-                    <br> امتیاز کلی: ${data.score.toFixed(1)}
+                    <br> امتیاز کلی: ${scoreDisplay}
                     <br> پاسخ صحیح: ${data.correct}
                     <br> پاسخ غلط: ${data.wrong}
+                    <br> دفعات استفاده از ۵۰-۵۰: ${data.fiftyFiftyUsed}
                 `;
                 resultsList.appendChild(listItem);
             });
