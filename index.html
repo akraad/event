@@ -26,9 +26,9 @@
             --score-text-color: #1a237e; /* آبی تیره برای متن */
             --score-name-color: #0d47a1; /* آبی تیره تر برای نام */
 
-            /* رنگ جدید برای دکمه‌های ذخیره/بارگذاری */
-            --save-load-btn-color: #6200EE; /* بنفش عمیق */
-            --save-load-btn-hover-color: #3700B3; /* بنفش تیره‌تر */
+            /* رنگ جدید برای دکمه‌های ذخیره/بارگذاری - سبز */
+            --save-load-btn-color: #28a745; /* سبز */
+            --save-load-btn-hover-color: #218838; /* سبز تیره‌تر */
         }
 
         body {
@@ -428,6 +428,57 @@
             font-weight: 500;
             color: var(--score-text-color);
         }
+
+        /* Scoring settings section */
+        .scoring-settings {
+            background-color: #f8f8f8;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            margin-top: 25px;
+        }
+        .scoring-settings h3 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .scoring-settings .difficulty-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .scoring-settings .point-input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .scoring-settings .point-input-group label {
+            font-size: 0.95em;
+            margin-bottom: 5px;
+            font-weight: 400;
+        }
+        .scoring-settings .point-input-group input[type="number"] {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .scoring-settings .negative-scoring-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .scoring-settings .negative-scoring-toggle input[type="checkbox"] {
+            margin-left: 8px;
+            transform: scale(1.3);
+        }
+        .scoring-settings .negative-scoring-toggle label {
+            font-size: 1.0em;
+            font-weight: 500;
+            color: var(--text-dark);
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -446,6 +497,48 @@
             
             <div class="save-load-buttons">
                 <button id="load-game-btn">بارگذاری بازی</button>
+            </div>
+
+            <div class="scoring-settings">
+                <h3>تنظیمات امتیازدهی</h3>
+                <div class="difficulty-points">
+                    <div class="point-input-group">
+                        <label for="easy-correct-points">آسان (صحیح):</label>
+                        <input type="number" id="easy-correct-points" value="1" min="0" step="0.5">
+                    </div>
+                    <div class="point-input-group">
+                        <label for="easy-incorrect-points">آسان (غلط):</label>
+                        <input type="number" id="easy-incorrect-points" value="-3" step="0.5">
+                    </div>
+                    <div class="point-input-group">
+                        <label for="medium-correct-points">متوسط (صحیح):</label>
+                        <input type="number" id="medium-correct-points" value="2" min="0" step="0.5">
+                    </div>
+                    <div class="point-input-group">
+                        <label for="medium-incorrect-points">متوسط (غلط):</label>
+                        <input type="number" id="medium-incorrect-points" value="-2" step="0.5">
+                    </div>
+                    <div class="point-input-group">
+                        <label for="hard-correct-points">سخت (صحیح):</label>
+                        <input type="number" id="hard-correct-points" value="3" min="0" step="0.5">
+                    </div>
+                    <div class="point-input-group">
+                        <label for="hard-incorrect-points">سخت (غلط):</label>
+                        <input type="number" id="hard-incorrect-points" value="-1" step="0.5">
+                    </div>
+                    <div class="point-input-group">
+                        <label for="very-hard-correct-points">خیلی سخت (صحیح):</label>
+                        <input type="number" id="very-hard-correct-points" value="4" min="0" step="0.5">
+                    </div>
+                    <div class="point-input-group">
+                        <label for="very-hard-incorrect-points">خیلی سخت (غلط):</label>
+                        <input type="number" id="very-hard-incorrect-points" value="-0.5" step="0.5">
+                    </div>
+                </div>
+                <div class="negative-scoring-toggle">
+                    <input type="checkbox" id="disable-negative-scoring">
+                    <label for="disable-negative-scoring">غیرفعال کردن امتیاز منفی</label>
+                </div>
             </div>
         </div>
 
@@ -489,6 +582,8 @@
             </div>
             <div id="player-scores-display-bottom">
                 </div>
+            <div id="total-questions-display" style="text-align: center; margin-top: 15px; font-size: 0.85em; color: var(--secondary-color);">
+                </div>
         </div>
 
         <div id="results-section">
@@ -516,6 +611,18 @@
         const playerScoresDisplayBottom = document.getElementById('player-scores-display-bottom');
         const saveGameBtn = document.getElementById('save-game-btn');
         const loadGameBtn = document.getElementById('load-game-btn');
+        const totalQuestionsDisplay = document.getElementById('total-questions-display'); // New element
+
+        // Scoring settings elements
+        const easyCorrectPointsInput = document.getElementById('easy-correct-points');
+        const easyIncorrectPointsInput = document.getElementById('easy-incorrect-points');
+        const mediumCorrectPointsInput = document.getElementById('medium-correct-points');
+        const mediumIncorrectPointsInput = document.getElementById('medium-incorrect-points');
+        const hardCorrectPointsInput = document.getElementById('hard-correct-points');
+        const hardIncorrectPointsInput = document.getElementById('hard-incorrect-points');
+        const veryHardCorrectPointsInput = document.getElementById('very-hard-correct-points');
+        const veryHardIncorrectPointsInput = document.getElementById('very-hard-incorrect-points');
+        const disableNegativeScoringCheckbox = document.getElementById('disable-negative-scoring');
 
         let playerCount = 0;
         const maxPlayers = 10;
@@ -528,25 +635,48 @@
         let manuallySelectedPlayer = null;
         let availableQuestionIndices = [];
 
-        const difficultyPointsCorrect = {
-            'آسان': 1,
-            'متوسط': 2,
-            'سخت': 3,
-            'خیلی سخت': 4
-        };
+        // Global scoring variables, updated from UI
+        let currentDifficultyPointsCorrect = {};
+        let currentDifficultyPointsIncorrect = {};
+        let isNegativeScoringDisabled = false;
 
-        const difficultyPointsIncorrect = {
-            'آسان': -3,
-            'متوسط': -2,
-            'سخت': -1,
-            'خیلی سخت': -0.5
-        };
 
         // Helper function to convert English numbers to Farsi numbers
         function toFarsiNumber(n) {
             const farsiDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
             return n.toString().replace(/\d/g, x => farsiDigits[x]);
         }
+
+        // --- Initialize scoring settings from UI ---
+        function updateScoringSettings() {
+            currentDifficultyPointsCorrect = {
+                'آسان': parseFloat(easyCorrectPointsInput.value),
+                'متوسط': parseFloat(mediumCorrectPointsInput.value),
+                'سخت': parseFloat(hardCorrectPointsInput.value),
+                'خیلی سخت': parseFloat(veryHardCorrectPointsInput.value)
+            };
+            currentDifficultyPointsIncorrect = {
+                'آسان': parseFloat(easyIncorrectPointsInput.value),
+                'متوسط': parseFloat(mediumIncorrectPointsInput.value),
+                'سخت': parseFloat(hardIncorrectPointsInput.value),
+                'خیلی سخت': parseFloat(veryHardIncorrectPointsInput.value)
+            };
+            isNegativeScoringDisabled = disableNegativeScoringCheckbox.checked;
+        }
+
+        // Initial update when script loads
+        updateScoringSettings();
+
+        // Add event listeners to update settings when changed
+        easyCorrectPointsInput.addEventListener('change', updateScoringSettings);
+        easyIncorrectPointsInput.addEventListener('change', updateScoringSettings);
+        mediumCorrectPointsInput.addEventListener('change', updateScoringSettings);
+        mediumIncorrectPointsInput.addEventListener('change', updateScoringSettings);
+        hardCorrectPointsInput.addEventListener('change', updateScoringSettings);
+        hardIncorrectPointsInput.addEventListener('change', updateScoringSettings);
+        veryHardCorrectPointsInput.addEventListener('change', updateScoringSettings);
+        veryHardIncorrectPointsInput.addEventListener('change', updateScoringSettings);
+        disableNegativeScoringCheckbox.addEventListener('change', updateScoringSettings);
 
 
         // --- مدیریت ورود نام کاربران ---
@@ -604,7 +734,7 @@
 
             userInputSection.style.display = 'none';
             quizSection.style.display = 'block';
-            loadQuestionsAndSetupQuiz(true);
+            loadQuestionsAndSetupQuiz(true); // Pass true to reset questions for new game
             updatePlayerScoresDisplay();
             populatePlayerButtons();
         });
@@ -619,6 +749,10 @@
                 }
                 const text = await response.text();
                 allQuestions = parseQuestions(text);
+                
+                // Display total questions count
+                totalQuestionsDisplay.textContent = `تعداد کل سوالات: ${toFarsiNumber(allQuestions.length)}`;
+
                 populateCategoryFilter();
 
                 if (resetQuestions) {
@@ -670,7 +804,12 @@
             const categories = new Set();
             // Add 'زبان انگلیسی' as a default category
             categories.add('زبان انگلیسی'); 
-            allQuestions.forEach(q => categories.add(q.category));
+            allQuestions.forEach(q => {
+                // Ensure category is not undefined or empty before adding
+                if (q.category && q.category.trim() !== '') {
+                    categories.add(q.category);
+                }
+            });
             categoryMultiselect.innerHTML = '';
             categories.forEach(cat => {
                 const label = document.createElement('label');
@@ -764,11 +903,16 @@
             if (clickedOption === correctOptionElement) {
                 clickedOption.classList.add('correct');
                 players[currentPlayerName].correct++;
-                players[currentPlayerName].score += difficultyPointsCorrect[questionDifficulty];
+                players[currentPlayerName].score += currentDifficultyPointsCorrect[questionDifficulty];
             } else {
                 clickedOption.classList.add('incorrect');
                 players[currentPlayerName].wrong++;
-                players[currentPlayerName].score += difficultyPointsIncorrect[questionDifficulty];
+                // Apply negative scoring only if not disabled
+                if (!isNegativeScoringDisabled) {
+                    players[currentPlayerName].score += currentDifficultyPointsIncorrect[questionDifficulty];
+                } else {
+                    players[currentPlayerName].score += 0; // No penalty if disabled
+                }
                 if (correctOptionElement) {
                     correctOptionElement.classList.add('correct');
                 }
@@ -884,10 +1028,13 @@
                 return;
             }
 
-            if (player.fiftyFiftyUsed === 0) {
-                player.score -= 0.5;
-            } else {
-                player.score -= 1;
+            // Apply penalty for 50-50 usage only if negative scoring is NOT disabled
+            if (!isNegativeScoringDisabled) {
+                if (player.fiftyFiftyUsed === 0) {
+                    player.score -= 0.5;
+                } else {
+                    player.score -= 1;
+                }
             }
             player.fiftyFiftyUsed++;
             updatePlayerScoresDisplay();
@@ -960,7 +1107,23 @@
                 currentPlayerAutoIndex: currentPlayerAutoIndex,
                 availableQuestionIndices: availableQuestionIndices,
                 activeCategories: Array.from(document.querySelectorAll('#category-multiselect input[name="category"]:checked')).map(checkbox => checkbox.value),
-                activeDifficulties: Array.from(document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]:checked')).map(checkbox => checkbox.value)
+                activeDifficulties: Array.from(document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]:checked')).map(checkbox => checkbox.value),
+                // Save scoring settings
+                scoring: {
+                    correct: {
+                        'آسان': parseFloat(easyCorrectPointsInput.value),
+                        'متوسط': parseFloat(mediumCorrectPointsInput.value),
+                        'سخت': parseFloat(hardCorrectPointsInput.value),
+                        'خیلی سخت': parseFloat(veryHardCorrectPointsInput.value)
+                    },
+                    incorrect: {
+                        'آسان': parseFloat(easyIncorrectPointsInput.value),
+                        'متوسط': parseFloat(mediumIncorrectPointsInput.value),
+                        'سخت': parseFloat(hardIncorrectPointsInput.value),
+                        'خیلی سخت': parseFloat(veryHardIncorrectPointsInput.value)
+                    },
+                    disableNegative: disableNegativeScoringCheckbox.checked
+                }
             };
             
             const dataStr = JSON.stringify(gameState, null, 2);
@@ -1000,11 +1163,10 @@
                         availableQuestionIndices = gameState.availableQuestionIndices;
 
                         // Restore filter states
-                        // First uncheck all, then check the active ones
                         document.querySelectorAll('#category-multiselect input[name="category"]').forEach(checkbox => {
                             checkbox.checked = false;
                         });
-                        if (gameState.activeCategories) { // Check if activeCategories exists in saved state
+                        if (gameState.activeCategories) {
                             gameState.activeCategories.forEach(cat => {
                                 const checkbox = document.querySelector(`#category-multiselect input[name="category"][value="${cat}"]`);
                                 if (checkbox) checkbox.checked = true;
@@ -1014,17 +1176,31 @@
                         document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]').forEach(checkbox => {
                             checkbox.checked = false;
                         });
-                        if (gameState.activeDifficulties) { // Check if activeDifficulties exists in saved state
+                        if (gameState.activeDifficulties) {
                             gameState.activeDifficulties.forEach(diff => {
                                 const checkbox = document.querySelector(`#difficulty-multiselect input[name="difficulty"][value="${diff}"]`);
                                 if (checkbox) checkbox.checked = true;
                             });
                         }
 
+                        // Restore scoring settings
+                        if (gameState.scoring) {
+                            easyCorrectPointsInput.value = gameState.scoring.correct['آسان'];
+                            easyIncorrectPointsInput.value = gameState.scoring.incorrect['آسان'];
+                            mediumCorrectPointsInput.value = gameState.scoring.correct['متوسط'];
+                            mediumIncorrectPointsInput.value = gameState.scoring.incorrect['متوسط'];
+                            hardCorrectPointsInput.value = gameState.scoring.correct['سخت'];
+                            hardIncorrectPointsInput.value = gameState.scoring.incorrect['سخت'];
+                            veryHardCorrectPointsInput.value = gameState.scoring.correct['خیلی سخت'];
+                            veryHardIncorrectPointsInput.value = gameState.scoring.incorrect['خیلی سخت'];
+                            disableNegativeScoringCheckbox.checked = gameState.scoring.disableNegative;
+                            updateScoringSettings(); // Apply loaded settings
+                        }
+
 
                         // Update player input fields based on loaded playerNamesArray
-                        playerInputsDiv.innerHTML = ''; // Clear existing inputs
-                        playerCount = 0; // Reset player count
+                        playerInputsDiv.innerHTML = '';
+                        playerCount = 0;
                         gameState.playerNamesArray.forEach((name, index) => {
                             playerCount++;
                             const inputWrapper = document.createElement('div');
