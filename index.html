@@ -30,25 +30,44 @@
         body {
             font-family: 'Vazirmatn', sans-serif;
             background-color: var(--background-light);
-            margin: 0;
-            padding: 20px;
+            margin: 0; /* حذف margin */
+            padding: 0; /* حذف padding */
             display: flex;
             flex-direction: column;
             align-items: center;
             color: var(--text-dark);
             line-height: 1.6;
+            min-height: 100vh; /* برای پوشش کل ارتفاع صفحه */
         }
+
+        /* Styles for the header title */
+        .page-header {
+            width: 100%;
+            background-color: var(--primary-color); /* رنگ آبی برای پس زمینه */
+            padding: 20px 0; /* فضای بالا و پایین */
+            text-align: center;
+            box-shadow: 0 2px 10px var(--shadow-light);
+            margin-bottom: 0; /* نزدیک شدن به بالا */
+        }
+
+        .page-header h1 {
+            color: white; /* متن سفید */
+            margin: 0; /* حذف margin پیش فرض h1 */
+            font-size: 2.5em; /* اندازه فونت عنوان */
+        }
+
         .container {
             background-color: var(--background-card);
-            padding: 30px;
+            padding: 20px; /* کاهش padding برای نمایش بهتر در موبایل */
             border-radius: 12px;
             box-shadow: 0 4px 20px var(--shadow-light);
-            width: 95%; /* افزایش عرض کانتینر */
+            width: 95%;
             max-width: 960px; /* افزایش حداکثر عرض کانتینر */
-            margin-bottom: 20px;
+            margin: 20px auto; /* کمی فاصله از بالا و پایین و وسط چین */
             box-sizing: border-box;
         }
-        h1, h2 {
+
+        h2 {
             color: var(--primary-color);
             text-align: center;
             margin-bottom: 25px;
@@ -110,7 +129,7 @@
             margin-bottom: 25px;
             background-color: #fcfcfc;
             box-shadow: 0 2px 10px var(--shadow-light);
-            width: 100%; /* مطمئن شوید که سؤال و گزینه‌ها عرض کامل را می‌گیرند */
+            width: 100%;
             box-sizing: border-box;
         }
         .question-meta {
@@ -256,15 +275,15 @@
             transform: scale(1.2);
         }
 
-        /* Smaller buttons for Next Question and 50-50 */
+        /* Smaller buttons for 50-50 and End Quiz */
         .quiz-controls button {
-            background-color: var(--primary-color);
+            background-color: var(--primary-color); /* پیش‌فرض برای دکمه‌های کنترل */
             color: white;
-            padding: 10px 20px; /* کاهش padding */
+            padding: 10px 20px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 0.95em; /* کاهش اندازه فونت */
+            font-size: 0.95em;
             font-weight: 500;
             transition: background-color 0.3s ease, transform 0.2s ease;
             width: 100%;
@@ -274,6 +293,25 @@
             background-color: #3a7bd5;
             transform: translateY(-2px);
         }
+
+        /* Next Question Button specific style */
+        #next-question-btn {
+            background-color: var(--primary-color); /* آبی رنگ باشد */
+            color: white;
+            padding: 12px 25px; /* کمی بزرگتر از دکمه‌های کنترل دیگر */
+            border-radius: 8px;
+            font-size: 1.05em;
+            font-weight: 500;
+            display: block; /* برای اینکه margin auto کار کند */
+            margin: 0 auto 20px auto; /* وسط چین و فاصله از پایین */
+            max-width: 200px; /* محدود کردن عرض برای نمایش بهتر در وسط */
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+        #next-question-btn:hover {
+            background-color: #3a7bd5;
+            transform: translateY(-2px);
+        }
+
 
         button#end-quiz-btn {
             background-color: var(--error-color);
@@ -334,37 +372,39 @@
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 20px; /* کاهش margin-top */
-            padding-top: 15px; /* کاهش padding-top */
+            margin-top: 20px;
+            padding-top: 15px;
             border-top: 1px solid var(--border-color);
-            gap: 10px; /* کاهش فاصله */
+            gap: 10px;
         }
         .player-score-item-bottom {
-            background-color: var(--score-bg-color); /* رنگ جدید */
-            padding: 8px 15px; /* کاهش padding */
-            border-radius: 6px; /* کمی گردتر */
-            min-width: 120px; /* کاهش حداقل عرض */
+            background-color: var(--score-bg-color);
+            padding: 8px 15px;
+            border-radius: 6px;
+            min-width: 120px;
             text-align: center;
-            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08); /* سایه کوچک تر */
-            border: 1px solid var(--score-border-color); /* رنگ border جدید */
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--score-border-color);
         }
         .player-score-item-bottom strong {
             display: block;
-            font-size: 1.0em; /* کاهش اندازه فونت */
-            margin-bottom: 3px; /* کاهش margin */
-            color: var(--score-name-color); /* رنگ جدید برای نام */
+            font-size: 1.0em;
+            margin-bottom: 3px;
+            color: var(--score-name-color);
         }
         .player-score-item-bottom span {
-            font-size: 0.9em; /* کاهش اندازه فونت */
+            font-size: 0.9em;
             font-weight: 500;
-            color: var(--score-text-color); /* رنگ جدید برای امتیاز */
+            color: var(--score-text-color);
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="page-header">
         <h1>مسابقه بزرگ دانش</h1>
-
+    </div>
+    
+    <div class="container">
         <div id="user-input-section" class="user-input">
             <h2>ثبت نام شرکت‌کنندگان</h2>
             <p>لطفاً نام حداقل ۲ و حداکثر ۱۰ شرکت‌کننده را وارد کنید:</p>
@@ -378,7 +418,7 @@
             <div class="player-buttons-container" id="player-buttons-container">
                 </div>
             
-            <button id="next-question-btn" style="margin-bottom: 20px;">سوال بعدی</button> <div id="questions-container">
+            <button id="next-question-btn">سوال بعدی</button> <div id="questions-container">
                 </div>
 
             <div class="quiz-controls">
@@ -425,7 +465,7 @@
         const quizSection = document.getElementById('quiz-section');
         const questionsContainer = document.getElementById('questions-container');
         const playerButtonsContainer = document.getElementById('player-buttons-container');
-        const nextQuestionBtn = document.getElementById('next-question-btn'); // Still need reference
+        const nextQuestionBtn = document.getElementById('next-question-btn');
         const endQuizBtn = document.getElementById('end-quiz-btn');
         const resultsSection = document.getElementById('results-section');
         const resultsList = document.getElementById('results-list');
