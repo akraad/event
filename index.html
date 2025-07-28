@@ -200,8 +200,8 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 8px;
-            margin-bottom: 5px;
-            padding-bottom: 0;
+            /* حذف border-bottom و padding-bottom */
+            margin-bottom: 5px; /* کاهش بیشتر فاصله تا دکمه سوال بعدی */
         }
         .player-button-wrapper {
             display: flex;
@@ -634,8 +634,6 @@
         let currentPlayerAutoIndex = 0;
         let manuallySelectedPlayer = null;
         let availableQuestionIndices = [];
-        let questionCategoryCounts = {}; // Track available questions per category for balanced selection
-        let lastSelectedCategory = null; // To help with rotational selection
 
         // Global scoring variables, updated from UI
         let currentDifficultyPointsCorrect = {};
@@ -759,7 +757,6 @@
 
                 if (resetQuestions) {
                     availableQuestionIndices = Array.from({ length: allQuestions.length }, (_, i) => i);
-                    lastSelectedCategory = null; // Reset for new game
                 }
                 displayNextQuestion();
             } catch (error) {
@@ -827,58 +824,24 @@
             const activeDifficulties = Array.from(document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]:checked'))
                                             .map(checkbox => checkbox.value);
 
-            let potentialQuestionIndices = [];
-            let categoriesToConsider = activeCategories.slice(); // Copy to manipulate
+            const filteredIndices = availableQuestionIndices.filter(index => {
+                const q = allQuestions[index];
+                const matchesCategory = activeCategories.includes(q.category);
+                const matchesDifficulty = activeDifficulties.includes(q.difficulty);
+                return matchesCategory && matchesDifficulty;
+            });
 
-            // Prioritize categories with available questions that haven't been "last selected" recently
-            if (lastSelectedCategory && categoriesToConsider.includes(lastSelectedCategory)) {
-                // Move last selected category to the end of the list for rotation
-                const index = categoriesToConsider.indexOf(lastSelectedCategory);
-                if (index > -1) {
-                    categoriesToConsider.splice(index, 1);
-                    categoriesToConsider.push(lastSelectedCategory);
-                }
-            }
-
-            // Iterate through categories to find a question
-            for (const category of categoriesToConsider) {
-                const categorySpecificIndices = availableQuestionIndices.filter(index => {
-                    const q = allQuestions[index];
-                    const matchesCategory = q.category === category;
-                    const matchesDifficulty = activeDifficulties.includes(q.difficulty);
-                    return matchesCategory && matchesDifficulty;
-                });
-                if (categorySpecificIndices.length > 0) {
-                    potentialQuestionIndices = categorySpecificIndices;
-                    lastSelectedCategory = category; // Update last selected category
-                    break; // Found questions in this category, no need to check others
-                }
-            }
-
-            // Fallback: if no specific category provided questions, just pick from all available filtered questions
-            if (potentialQuestionIndices.length === 0) {
-                potentialQuestionIndices = availableQuestionIndices.filter(index => {
-                    const q = allQuestions[index];
-                    const matchesCategory = activeCategories.includes(q.category);
-                    const matchesDifficulty = activeDifficulties.includes(q.difficulty);
-                    return matchesCategory && matchesDifficulty;
-                });
-                lastSelectedCategory = null; // Reset if falling back to general selection
-            }
-
-
-            if (potentialQuestionIndices.length === 0) {
+            if (filteredIndices.length === 0) {
                 questionsContainer.innerHTML = "<p>سوالی با این فیلترها پیدا نشد یا تمام سوالات پرسیده شده‌اند. لطفاً فیلترها را تغییر دهید یا بازی را ریست کنید.</p>";
                 currentQuestion = null;
                 fiftyFiftyBtn.disabled = true;
                 return;
             }
 
-            const randomIndex = Math.floor(Math.random() * potentialQuestionIndices.length);
-            const selectedQuestionIndex = potentialQuestionIndices[randomIndex];
+            const randomIndexInFiltered = Math.floor(Math.random() * filteredIndices.length);
+            const selectedQuestionIndex = filteredIndices[randomIndexInFiltered];
             currentQuestion = allQuestions[selectedQuestionIndex];
 
-            // Remove the asked question's index from availableQuestionIndices
             availableQuestionIndices = availableQuestionIndices.filter(index => index !== selectedQuestionIndex);
 
             questionsContainer.innerHTML = '';
@@ -900,19 +863,15 @@
             questionsContainer.appendChild(questionBox);
 
             document.querySelectorAll('.options-list li').forEach(optionLi => {
-                // Ensure the comparison logic is robust
-                const isCorrect = currentQuestion && optionLi.dataset.optionText === currentQuestion.correctAnswer.trim();
-                // Pass isCorrect directly to the handler
-                optionLi.addEventListener('click', (event) => handleOptionClick(event, isCorrect));
+                optionLi.addEventListener('click', handleOptionClick);
             });
-            // Always update 50-50 button state after displaying a new question
-            updateFiftyFiftyButtonState(); 
+            updateFiftyFiftyButtonState();
             
             manuallySelectedPlayer = null;
             updatePlayerButtons();
         }
 
-        function handleOptionClick(event, isCorrectAnswer) { // isCorrectAnswer is now passed directly
+        function handleOptionClick(event) {
             const clickedOption = event.target;
             const optionsList = clickedOption.closest('.options-list');
             const questionDifficulty = optionsList.dataset.difficulty;
@@ -929,21 +888,19 @@
                 return;
             }
 
-            // Disable all options for this question after one is clicked
             Array.from(optionsList.children).forEach(li => {
-                li.classList.add('answered'); 
-                li.removeEventListener('click', handleOptionClick); // Remove all listeners to prevent re-clicking
+                li.classList.add('answered');
+                li.removeEventListener('click', handleOptionClick);
             });
             
-            // Find the correct option element to highlight it
             let correctOptionElement = null;
             Array.from(optionsList.children).forEach(li => {
-                if (currentQuestion && li.dataset.optionText === currentQuestion.correctAnswer.trim()) {
+                if (currentQuestion && li.textContent.includes(currentQuestion.correctAnswer)) {
                     correctOptionElement = li;
                 }
             });
 
-            if (isCorrectAnswer) {
+            if (clickedOption === correctOptionElement) {
                 clickedOption.classList.add('correct');
                 players[currentPlayerName].correct++;
                 players[currentPlayerName].score += currentDifficultyPointsCorrect[questionDifficulty];
@@ -957,16 +914,15 @@
                     players[currentPlayerName].score += 0; // No penalty if disabled
                 }
                 if (correctOptionElement) {
-                    correctOptionElement.classList.add('correct'); // Show the correct answer as well
+                    correctOptionElement.classList.add('correct');
                 }
             }
             updatePlayerScoresDisplay();
             
-            // Move to the next player only if no manual selection was made for this question
             if (!manuallySelectedPlayer) {
                 currentPlayerAutoIndex = (currentPlayerAutoIndex + 1) % playerNamesArray.length;
             }
-            updatePlayerButtons(); // Update active player button for next turn
+            updatePlayerButtons();
         }
 
         nextQuestionBtn.addEventListener('click', displayNextQuestion);
@@ -1084,8 +1040,9 @@
             updatePlayerScoresDisplay();
 
             const allOptions = Array.from(optionsList.children);
-            // Filter using data-option-text for robustness
-            const incorrectOptions = allOptions.filter(li => li.dataset.optionText !== currentQuestion.correctAnswer.trim());
+            const correctAnswerText = currentQuestion.correctAnswer;
+            
+            const incorrectOptions = allOptions.filter(li => !li.textContent.includes(correctAnswerText));
             
             let removedCount = 0;
             while (removedCount < 2 && incorrectOptions.length > 0) {
@@ -1100,21 +1057,15 @@
         }
 
         function updateFiftyFiftyButtonState() {
-             // Always check currentQuestion before accessing its properties
-             if (currentQuestion) {
-                 if (currentQuestion.difficulty === 'سخت' || currentQuestion.difficulty === 'خیلی سخت') { // Corrected "خیخت" to "خیلی سخت"
-                     const optionsList = questionsContainer.querySelector('.options-list');
-                     // Check if 50-50 has already been used for this specific question by looking for 'removed' class
-                     if (optionsList && optionsList.querySelectorAll('.removed').length === 0) {
-                        fiftyFiftyBtn.disabled = false;
-                     } else {
-                        fiftyFiftyBtn.disabled = true; // Already used or no options list
-                     }
-                } else {
-                    fiftyFiftyBtn.disabled = true; // Not a hard question
-                }
+             if (currentQuestion && (currentQuestion.difficulty === 'سخت' || currentQuestion.difficulty === 'خیخت')) {
+                 const optionsList = questionsContainer.querySelector('.options-list');
+                 if (optionsList && optionsList.querySelectorAll('.removed').length === 0) {
+                    fiftyFiftyBtn.disabled = false;
+                 } else {
+                    fiftyFiftyBtn.disabled = true;
+                 }
             } else {
-                fiftyFiftyBtn.disabled = true; // No question displayed
+                fiftyFiftyBtn.disabled = true;
             }
         }
 
@@ -1157,6 +1108,7 @@
                 availableQuestionIndices: availableQuestionIndices,
                 activeCategories: Array.from(document.querySelectorAll('#category-multiselect input[name="category"]:checked')).map(checkbox => checkbox.value),
                 activeDifficulties: Array.from(document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]:checked')).map(checkbox => checkbox.value),
+                // Save scoring settings
                 scoring: {
                     correct: {
                         'آسان': parseFloat(easyCorrectPointsInput.value),
@@ -1171,8 +1123,7 @@
                         'خیلی سخت': parseFloat(veryHardIncorrectPointsInput.value)
                     },
                     disableNegative: disableNegativeScoringCheckbox.checked
-                },
-                lastSelectedCategory: lastSelectedCategory
+                }
             };
             
             const dataStr = JSON.stringify(gameState, null, 2);
@@ -1210,7 +1161,6 @@
                         playerNamesArray = gameState.playerNamesArray;
                         currentPlayerAutoIndex = gameState.currentPlayerAutoIndex;
                         availableQuestionIndices = gameState.availableQuestionIndices;
-                        lastSelectedCategory = gameState.lastSelectedCategory || null;
 
                         // Restore filter states
                         document.querySelectorAll('#category-multiselect input[name="category"]').forEach(checkbox => {
