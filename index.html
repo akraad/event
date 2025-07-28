@@ -42,7 +42,7 @@
             border-radius: 4px;
             font-size: 16px;
         }
-        .user-input button {
+        .user-input button, .quiz-controls button {
             background-color: #007bff;
             color: white;
             padding: 12px 20px;
@@ -52,8 +52,9 @@
             font-size: 16px;
             transition: background-color 0.3s ease;
             width: 100%;
+            margin-bottom: 10px;
         }
-        .user-input button:hover {
+        .user-input button:hover, .quiz-controls button:hover {
             background-color: #0056b3;
         }
         #quiz-section {
@@ -109,15 +110,79 @@
             border-color: #dc3545; /* Darker red */
             color: #721c24;
         }
-        .options-list li.disabled {
+        .options-list li.answered {
             pointer-events: none; /* Disable clicking after an answer */
-            opacity: 0.7;
+            opacity: 0.8; /* Make it slightly transparent */
+        }
+        .player-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .player-score-item {
+            background-color: #e0f2f7;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 5px;
+            min-width: 120px;
+            text-align: center;
+        }
+        .current-player-select {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .current-player-select select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            min-width: 200px;
+            margin-right: 10px;
+        }
+        .quiz-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .quiz-controls select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        #results-section {
+            display: none;
+            text-align: center;
+            padding-top: 30px;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        #results-section h2 {
+            color: #28a745;
+        }
+        #results-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+        #results-list li {
+            background-color: #e0f7fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            text-align: right;
+            border: 1px solid #b2ebf2;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>مسابقه بزرگ دانش</h1>
+
         <div id="user-input-section" class="user-input">
             <h2>ثبت نام شرکت‌کنندگان</h2>
             <p>لطفاً نام حداقل ۲ و حداکثر ۱۰ شرکت‌کننده را وارد کنید:</p>
@@ -128,9 +193,41 @@
         </div>
 
         <div id="quiz-section">
-            <h2>سوالات</h2>
+            <div class="player-info" id="player-scores-display">
+                </div>
+
+            <div class="current-player-select">
+                <label for="current-player-select">کاربر فعلی برای پاسخ‌دهی:</label>
+                <select id="current-player-select">
+                    </select>
+            </div>
+
             <div id="questions-container">
                 </div>
+
+            <div class="quiz-controls">
+                <label for="category-select">انتخاب دسته بندی:</label>
+                <select id="category-select">
+                    <option value="">همه دسته‌ها (رندوم)</option>
+                </select>
+
+                <label for="difficulty-select">انتخاب درجه سختی:</label>
+                <select id="difficulty-select">
+                    <option value="">همه سختی‌ها (رندوم)</option>
+                    <option value="آسان">آسان</option>
+                    <option value="متوسط">متوسط</option>
+                    <option value="سخت">سخت</option>
+                    <option value="خیلی سخت">خیلی سخت</option>
+                </select>
+                <button id="next-question-btn">سوال بعدی</button>
+                <button id="end-quiz-btn" style="background-color: #dc3545;">پایان مسابقه</button>
+            </div>
+        </div>
+
+        <div id="results-section">
+            <h2>نتایج مسابقه</h2>
+            <ul id="results-list">
+                </ul>
         </div>
     </div>
 
@@ -141,11 +238,30 @@
         const userInputSection = document.getElementById('user-input-section');
         const quizSection = document.getElementById('quiz-section');
         const questionsContainer = document.getElementById('questions-container');
+        const playerScoresDisplay = document.getElementById('player-scores-display');
+        const currentPlayerSelect = document.getElementById('current-player-select');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const endQuizBtn = document.getElementById('end-quiz-btn');
+        const resultsSection = document.getElementById('results-section');
+        const resultsList = document.getElementById('results-list');
+        const categorySelect = document.getElementById('category-select');
+        const difficultySelect = document.getElementById('difficulty-select');
 
         let playerCount = 0;
         const maxPlayers = 10;
         const minPlayers = 2;
-        let questions = []; // To store parsed questions
+        let allQuestions = []; // Stores all parsed questions
+        let availableQuestions = []; // Questions filtered by category/difficulty
+        let currentQuestionIndex = -1; // To track current question
+        let players = {}; // Stores player names and their scores: { 'name': { score: 0, correct: 0, wrong: 0 } }
+        let playerNamesArray = []; // To maintain order of player names
+
+        const difficultyPoints = {
+            'آسان': 1,
+            'متوسط': 2,
+            'سخت': 3,
+            'خیلی سخت': 4
+        };
 
         // --- مدیریت ورود نام کاربران ---
 
@@ -173,7 +289,7 @@
         addPlayerBtn.addEventListener('click', addPlayerInput);
 
         startQuizBtn.addEventListener('click', () => {
-            const playerNames = [];
+            playerNamesArray = [];
             let allInputsValid = true;
             for (let i = 1; i <= playerCount; i++) {
                 const input = document.getElementById(`player${i}`);
@@ -181,12 +297,12 @@
                     allInputsValid = false;
                     input.style.borderColor = 'red'; // Highlight empty input
                 } else if (input) {
-                    playerNames.push(input.value.trim());
+                    playerNamesArray.push(input.value.trim());
                     input.style.borderColor = '#ddd'; // Reset border color
                 }
             }
 
-            if (playerNames.length < minPlayers) {
+            if (playerNamesArray.length < minPlayers) {
                 alert(`لطفاً حداقل ${minPlayers} شرکت‌کننده وارد کنید.`);
                 return;
             }
@@ -196,26 +312,32 @@
                 return;
             }
 
-            // At this point, playerNames array contains valid names
-            console.log('Registered Players:', playerNames);
+            // Initialize player scores
+            players = {}; // Reset players object
+            playerNamesArray.forEach(name => {
+                players[name] = { score: 0, correct: 0, wrong: 0 };
+            });
 
             userInputSection.style.display = 'none';
             quizSection.style.display = 'block';
-            loadQuestions(); // Start loading and displaying questions
+            loadQuestionsAndSetupQuiz();
+            updatePlayerScoresDisplay(); // Display initial scores (all 0)
+            populatePlayerSelect(); // Populate the current player dropdown
         });
-
 
         // --- مدیریت خواندن و نمایش سوالات ---
 
-        async function loadQuestions() {
+        async function loadQuestionsAndSetupQuiz() {
             try {
                 const response = await fetch('race.txt');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const text = await response.text();
-                questions = parseQuestions(text);
-                displayQuestions();
+                allQuestions = parseQuestions(text);
+                populateCategoryFilter();
+                availableQuestions = [...allQuestions]; // Initially all questions are available
+                displayNextQuestion(); // Display the first question
             } catch (error) {
                 console.error("Error loading or parsing questions:", error);
                 questionsContainer.innerHTML = "<p>خطا در بارگذاری سوالات. لطفاً از وجود فایل race.txt در کنار این فایل اطمینان حاصل کنید.</p>";
@@ -257,29 +379,61 @@
             return parsedQuestions;
         }
 
+        function populateCategoryFilter() {
+            const categories = new Set();
+            allQuestions.forEach(q => categories.add(q.category));
+            categorySelect.innerHTML = '<option value="">همه دسته‌ها (رندوم)</option>';
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categorySelect.appendChild(option);
+            });
+        }
 
-        function displayQuestions() {
-            questionsContainer.innerHTML = ''; // Clear previous questions
-            questions.forEach((q, index) => {
-                const questionBox = document.createElement('div');
-                questionBox.className = 'question-box';
-                questionBox.innerHTML = `
-                    <div class="question-meta">
-                        ${q.category} - ${q.difficulty}
-                    </div>
-                    <div class="question-text">
-                        ${index + 1}. ${q.questionText}
-                    </div>
-                    <ul class="options-list" data-correct-answer="${q.correctAnswer}">
-                        ${q.options.map(option => `
-                            <li data-option="${option.substring(0, option.indexOf(')'))}">${option}</li>
-                        `).join('')}
-                    </ul>
-                `;
-                questionsContainer.appendChild(questionBox);
+        function displayNextQuestion() {
+            // Apply filters
+            const selectedCategory = categorySelect.value;
+            const selectedDifficulty = difficultySelect.value;
+
+            const filteredQuestions = allQuestions.filter(q => {
+                const matchesCategory = selectedCategory === '' || q.category === selectedCategory;
+                const matchesDifficulty = selectedDifficulty === '' || q.difficulty === selectedDifficulty;
+                return matchesCategory && matchesDifficulty;
             });
 
-            // Add event listeners to options
+            if (filteredQuestions.length === 0) {
+                questionsContainer.innerHTML = "<p>سوالی با این فیلترها پیدا نشد. لطفاً فیلترها را تغییر دهید.</p>";
+                currentQuestionIndex = -1; // No question to display
+                return;
+            }
+
+            // Select a random question from filtered ones
+            const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
+            const question = filteredQuestions[randomIndex];
+
+            questionsContainer.innerHTML = ''; // Clear previous question
+            const questionBox = document.createElement('div');
+            questionBox.className = 'question-box';
+            questionBox.innerHTML = `
+                <div class="question-meta">
+                    ${question.category} - ${question.difficulty}
+                </div>
+                <div class="question-text">
+                    ${question.questionText}
+                </div>
+                <ul class="options-list" data-correct-answer="${question.correctAnswer}" data-difficulty="${question.difficulty}">
+                    ${question.options.map(option => `
+                        <li data-option-text="${option.substring(option.indexOf(')') + 1).trim()}" data-option-key="${option.substring(0, option.indexOf(')'))}">${option}</li>
+                    `).join('')}
+                </ul>
+            `;
+            questionsContainer.appendChild(questionBox);
+
+            // Store the currently displayed question for score calculation
+            currentQuestionIndex = allQuestions.indexOf(question); // Get original index for consistency (though not directly used now for array access)
+
+            // Add event listeners to options for the *new* question
             document.querySelectorAll('.options-list li').forEach(optionLi => {
                 optionLi.addEventListener('click', handleOptionClick);
             });
@@ -288,33 +442,94 @@
         function handleOptionClick(event) {
             const clickedOption = event.target;
             const optionsList = clickedOption.closest('.options-list');
-            const correctAnswerText = optionsList.dataset.correctAnswer; // e.g., "انگلیس"
+            const correctAnswerText = optionsList.dataset.correctAnswer;
+            const questionDifficulty = optionsList.dataset.difficulty;
+
+            const currentPlayerName = currentPlayerSelect.value;
+            if (!currentPlayerName) {
+                alert('لطفاً قبل از پاسخ‌دهی، شرکت‌کننده را انتخاب کنید.');
+                return;
+            }
 
             // Disable all options for this question after one is clicked
             Array.from(optionsList.children).forEach(li => {
-                li.classList.add('disabled');
+                li.classList.add('answered'); // Add a class to indicate it's answered and disable clicks
                 li.removeEventListener('click', handleOptionClick); // Remove listener to prevent re-clicking
             });
-
+            
+            let isCorrect = false;
             // Find the correct option based on its text content
             let correctOptionElement = null;
             Array.from(optionsList.children).forEach(li => {
-                // We need to find the li that contains the `correctAnswerText`
-                // Let's assume the correct answer text is part of the option string, e.g., "ج) انگلیس"
                 if (li.textContent.includes(correctAnswerText)) {
                     correctOptionElement = li;
                 }
             });
-            
-            // Check if the clicked option is the correct one
+
             if (clickedOption === correctOptionElement) {
                 clickedOption.classList.add('correct');
+                isCorrect = true;
+                players[currentPlayerName].correct++;
+                players[currentPlayerName].score += difficultyPoints[questionDifficulty];
             } else {
                 clickedOption.classList.add('incorrect');
+                players[currentPlayerName].wrong++;
                 if (correctOptionElement) {
                     correctOptionElement.classList.add('correct'); // Show the correct answer as well
                 }
             }
+            updatePlayerScoresDisplay();
+        }
+
+        nextQuestionBtn.addEventListener('click', displayNextQuestion);
+
+        endQuizBtn.addEventListener('click', showResults);
+
+        // --- مدیریت امتیازات و انتخاب کاربر ---
+
+        function updatePlayerScoresDisplay() {
+            playerScoresDisplay.innerHTML = '';
+            playerNamesArray.forEach(name => {
+                const player = players[name];
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-score-item';
+                playerDiv.innerHTML = `
+                    <strong>${name}</strong><br>
+                    امتیاز: ${player.score}
+                `;
+                playerScoresDisplay.appendChild(playerDiv);
+            });
+        }
+
+        function populatePlayerSelect() {
+            currentPlayerSelect.innerHTML = '<option value="">-- انتخاب کنید --</option>';
+            playerNamesArray.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                currentPlayerSelect.appendChild(option);
+            });
+        }
+
+        // --- نمایش نتایج نهایی ---
+        function showResults() {
+            quizSection.style.display = 'none';
+            resultsSection.style.display = 'block';
+            resultsList.innerHTML = '';
+
+            // Sort players by score
+            const sortedPlayers = Object.entries(players).sort(([, a], [, b]) => b.score - a.score);
+
+            sortedPlayers.forEach(([name, data]) => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    <strong>${name}:</strong>
+                    <br> امتیاز کلی: ${data.score}
+                    <br> پاسخ صحیح: ${data.correct}
+                    <br> پاسخ غلط: ${data.wrong}
+                `;
+                resultsList.appendChild(listItem);
+            });
         }
 
     </script>
