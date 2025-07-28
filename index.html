@@ -200,8 +200,8 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 8px;
-            margin-bottom: 10px;
-            padding-bottom: 0;
+            /* حذف border-bottom و padding-bottom */
+            margin-bottom: 5px; /* کاهش بیشتر فاصله تا دکمه سوال بعدی */
         }
         .player-button-wrapper {
             display: flex;
@@ -611,7 +611,7 @@
         const playerScoresDisplayBottom = document.getElementById('player-scores-display-bottom');
         const saveGameBtn = document.getElementById('save-game-btn');
         const loadGameBtn = document.getElementById('load-game-btn');
-        const totalQuestionsDisplay = document.getElementById('total-questions-display'); // New element
+        const totalQuestionsDisplay = document.getElementById('total-questions-display');
 
         // Scoring settings elements
         const easyCorrectPointsInput = document.getElementById('easy-correct-points');
@@ -1057,7 +1057,7 @@
         }
 
         function updateFiftyFiftyButtonState() {
-             if (currentQuestion && (currentQuestion.difficulty === 'سخت' || currentQuestion.difficulty === 'خیلی سخت')) {
+             if (currentQuestion && (currentQuestion.difficulty === 'سخت' || currentQuestion.difficulty === 'خیخت')) {
                  const optionsList = questionsContainer.querySelector('.options-list');
                  if (optionsList && optionsList.querySelectorAll('.removed').length === 0) {
                     fiftyFiftyBtn.disabled = false;
@@ -1218,8 +1218,12 @@
                         }
 
 
-                        userInputSection.style.display = 'none';
-                        quizSection.style.display = 'block';
+                        // If loading from user input section, show quiz section
+                        if (userInputSection.style.display !== 'none') {
+                           userInputSection.style.display = 'none';
+                           quizSection.style.display = 'block';
+                        }
+
 
                         loadQuestionsAndSetupQuiz(false).then(() => {
                             populatePlayerButtons();
