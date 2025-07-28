@@ -17,7 +17,9 @@
             --success-color: #5cb85c;   /* سبز موفقیت */
             --error-color: #d9534f;     /* قرمز خطا */
             --shadow-light: rgba(0, 0, 0, 0.08); /* سایه روشن */
-            --fifty-fifty-color: #ffc107; /* رنگ برای دکده 50-50 */
+            --fifty-fifty-color: #ffc107; /* رنگ برای دکمه 50-50 */
+            --tavakkol-color: #5bc0de;      /* رنگ برای دکمه توکل به خدا */
+            --tavakkol-hover-color: #31b0d5; /* رنگ هاور برای دکمه توکل به خدا */
             --active-player-color: #28a745; /* رنگ برای کاربر فعال */
 
             /* رنگ بندی جدید برای امتیازات پایین صفحه */
@@ -278,7 +280,7 @@
             transform: scale(1.1);
         }
 
-        /* Smaller buttons for 50-50 and End Quiz */
+        /* Smaller buttons for helpers and End Quiz */
         .quiz-controls button {
             background-color: var(--primary-color);
             color: white;
@@ -326,16 +328,28 @@
         button#fifty-fifty-btn {
             background-color: var(--fifty-fifty-color);
             color: var(--text-dark);
+            margin-bottom: 5px; /* فاصله کمتر */
         }
         button#fifty-fifty-btn:hover {
             background-color: #e0a800;
         }
-        button#fifty-fifty-btn:disabled {
+        button#fifty-fifty-btn:disabled,
+        button#tavakkol-btn:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
             color: #666;
             transform: none;
         }
+        
+        button#tavakkol-btn {
+            background-color: var(--tavakkol-color);
+            color: white;
+        }
+        
+        button#tavakkol-btn:hover {
+             background-color: var(--tavakkol-hover-color);
+        }
+
 
         /* Save/Load buttons style */
         .save-load-buttons {
@@ -553,6 +567,7 @@
 
             <div class="quiz-controls">
                 <button id="fifty-fifty-btn">۵۰-۵۰ (حذف ۲ گزینه غلط)</button>
+                <button id="tavakkol-btn">توکل به خدا (حذف ۱ گزینه غلط)</button>
                 
                 <label>دسته‌بندی‌های فعال:</label>
                 <div id="category-multiselect" class="multiselect-container">
@@ -608,6 +623,7 @@
         const categoryMultiselect = document.getElementById('category-multiselect');
         const difficultyMultiselect = document.getElementById('difficulty-multiselect');
         const fiftyFiftyBtn = document.getElementById('fifty-fifty-btn');
+        const tavakkolBtn = document.getElementById('tavakkol-btn'); // دکمه جدید
         const playerScoresDisplayBottom = document.getElementById('player-scores-display-bottom');
         const saveGameBtn = document.getElementById('save-game-btn');
         const loadGameBtn = document.getElementById('load-game-btn');
@@ -634,6 +650,7 @@
         let currentPlayerAutoIndex = 0;
         let manuallySelectedPlayer = null;
         let availableQuestionIndices = [];
+        let categoryUsageCount = {}; // برای نمایش متعادل دسته بندی
 
         // Global scoring variables, updated from UI
         let currentDifficultyPointsCorrect = {};
@@ -729,8 +746,11 @@
 
             players = {};
             playerNamesArray.forEach(name => {
-                players[name] = { score: 0, correct: 0, wrong: 0, fiftyFiftyUsed: 0 };
+                // آبجکت بازیکنان با قابلیت‌های جدید
+                players[name] = { score: 0, correct: 0, wrong: 0, fiftyFiftyUsed: 0, tavakkolUsed: 0 };
             });
+            
+            categoryUsageCount = {}; // ریست کردن شمارنده دسته‌بندی‌ها
 
             userInputSection.style.display = 'none';
             quizSection.style.display = 'block';
@@ -750,9 +770,7 @@
                 const text = await response.text();
                 allQuestions = parseQuestions(text);
                 
-                // Display total questions count
                 totalQuestionsDisplay.textContent = `تعداد کل سوالات: ${toFarsiNumber(allQuestions.length)}`;
-
                 populateCategoryFilter();
 
                 if (resetQuestions) {
@@ -802,10 +820,8 @@
 
         function populateCategoryFilter() {
             const categories = new Set();
-            // Add 'زبان انگلیسی' as a default category
             categories.add('زبان انگلیسی'); 
             allQuestions.forEach(q => {
-                // Ensure category is not undefined or empty before adding
                 if (q.category && q.category.trim() !== '') {
                     categories.add(q.category);
                 }
@@ -819,41 +835,61 @@
         }
 
         function displayNextQuestion() {
-            const activeCategories = Array.from(document.querySelectorAll('#category-multiselect input[name="category"]:checked'))
-                                          .map(checkbox => checkbox.value);
-            const activeDifficulties = Array.from(document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]:checked'))
-                                            .map(checkbox => checkbox.value);
+            const activeCategories = Array.from(document.querySelectorAll('#category-multiselect input[name="category"]:checked')).map(cb => cb.value);
+            const activeDifficulties = Array.from(document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]:checked')).map(cb => cb.value);
 
-            const filteredIndices = availableQuestionIndices.filter(index => {
+            // 1. فیلتر سوالات موجود بر اساس درجه سختی و دسته‌بندی فعال
+            let potentialIndices = availableQuestionIndices.filter(index => {
                 const q = allQuestions[index];
-                const matchesCategory = activeCategories.includes(q.category);
-                const matchesDifficulty = activeDifficulties.includes(q.difficulty);
-                return matchesCategory && matchesDifficulty;
+                return activeDifficulties.includes(q.difficulty) && activeCategories.includes(q.category);
             });
 
-            if (filteredIndices.length === 0) {
+            if (potentialIndices.length === 0) {
                 questionsContainer.innerHTML = "<p>سوالی با این فیلترها پیدا نشد یا تمام سوالات پرسیده شده‌اند. لطفاً فیلترها را تغییر دهید یا بازی را ریست کنید.</p>";
                 currentQuestion = null;
-                fiftyFiftyBtn.disabled = true;
+                updateHelperButtonsState();
                 return;
             }
 
-            const randomIndexInFiltered = Math.floor(Math.random() * filteredIndices.length);
-            const selectedQuestionIndex = filteredIndices[randomIndexInFiltered];
-            currentQuestion = allQuestions[selectedQuestionIndex];
+            // 2. گروه‌بندی سوالات باقی‌مانده بر اساس دسته‌بندی
+            const questionsByCategory = {};
+            potentialIndices.forEach(index => {
+                const category = allQuestions[index].category;
+                if (!questionsByCategory[category]) {
+                    questionsByCategory[category] = [];
+                }
+                questionsByCategory[category].push(index);
+            });
+            
+            const availableCategories = Object.keys(questionsByCategory);
 
+            // 3. پیدا کردن کم‌استفاده‌ترین دسته‌بندی‌ها
+            let minUsage = Infinity;
+            availableCategories.forEach(cat => {
+                minUsage = Math.min(minUsage, categoryUsageCount[cat] || 0);
+            });
+            
+            const leastUsedCategories = availableCategories.filter(cat => (categoryUsageCount[cat] || 0) === minUsage);
+            
+            // 4. انتخاب یک دسته‌بندی تصادفی از بین کم‌استفاده‌ترین‌ها
+            const selectedCategory = leastUsedCategories[Math.floor(Math.random() * leastUsedCategories.length)];
+            
+            // 5. افزایش شمارنده استفاده برای آن دسته‌بندی
+            categoryUsageCount[selectedCategory] = (categoryUsageCount[selectedCategory] || 0) + 1;
+            
+            // 6. انتخاب یک سوال تصادفی از دسته‌بندی انتخاب‌شده
+            const finalIndexPool = questionsByCategory[selectedCategory];
+            const selectedQuestionIndex = finalIndexPool[Math.floor(Math.random() * finalIndexPool.length)];
+
+            currentQuestion = allQuestions[selectedQuestionIndex];
             availableQuestionIndices = availableQuestionIndices.filter(index => index !== selectedQuestionIndex);
 
             questionsContainer.innerHTML = '';
             const questionBox = document.createElement('div');
             questionBox.className = 'question-box';
             questionBox.innerHTML = `
-                <div class="question-meta">
-                    ${currentQuestion.category} - ${currentQuestion.difficulty}
-                </div>
-                <div class="question-text">
-                    ${currentQuestion.questionText}
-                </div>
+                <div class="question-meta">${currentQuestion.category} - ${currentQuestion.difficulty}</div>
+                <div class="question-text">${currentQuestion.questionText}</div>
                 <ul class="options-list" data-difficulty="${currentQuestion.difficulty}">
                     ${currentQuestion.options.map(option => `
                         <li data-option-text="${option.substring(option.indexOf(')') + 1).trim()}" data-option-key="${option.substring(0, option.indexOf(')'))}">${option}</li>
@@ -862,13 +898,11 @@
             `;
             questionsContainer.appendChild(questionBox);
 
-            document.querySelectorAll('.options-list li').forEach(optionLi => {
-                optionLi.addEventListener('click', handleOptionClick);
-            });
-            updateFiftyFiftyButtonState();
+            document.querySelectorAll('.options-list li').forEach(li => li.addEventListener('click', handleOptionClick));
             
             manuallySelectedPlayer = null;
             updatePlayerButtons();
+            updateHelperButtonsState();
         }
 
         function handleOptionClick(event) {
@@ -876,12 +910,7 @@
             const optionsList = clickedOption.closest('.options-list');
             const questionDifficulty = optionsList.dataset.difficulty;
 
-            let currentPlayerName;
-            if (manuallySelectedPlayer) {
-                currentPlayerName = manuallySelectedPlayer;
-            } else {
-                currentPlayerName = playerNamesArray[currentPlayerAutoIndex];
-            }
+            let currentPlayerName = manuallySelectedPlayer || playerNamesArray[currentPlayerAutoIndex];
 
             if (!currentPlayerName) {
                 alert('خطا: کاربر فعلی یافت نشد. لطفاً مسابقه را مجدداً شروع کنید.');
@@ -907,17 +936,15 @@
             } else {
                 clickedOption.classList.add('incorrect');
                 players[currentPlayerName].wrong++;
-                // Apply negative scoring only if not disabled
                 if (!isNegativeScoringDisabled) {
                     players[currentPlayerName].score += currentDifficultyPointsIncorrect[questionDifficulty];
-                } else {
-                    players[currentPlayerName].score += 0; // No penalty if disabled
                 }
                 if (correctOptionElement) {
                     correctOptionElement.classList.add('correct');
                 }
             }
             updatePlayerScoresDisplay();
+            updateHelperButtonsState(); // دکمه‌های کمکی بعد از پاسخ غیرفعال شوند
             
             if (!manuallySelectedPlayer) {
                 currentPlayerAutoIndex = (currentPlayerAutoIndex + 1) % playerNamesArray.length;
@@ -928,11 +955,11 @@
         nextQuestionBtn.addEventListener('click', displayNextQuestion);
         endQuizBtn.addEventListener('click', showResults);
         fiftyFiftyBtn.addEventListener('click', handleFiftyFifty);
+        tavakkolBtn.addEventListener('click', handleTavakkol); // اتصال رویداد
         
         // --- مدیریت امتیازات و انتخاب کاربر ---
 
         function updatePlayerScoresDisplay() {
-            // Update scores at the bottom (main display)
             playerScoresDisplayBottom.innerHTML = '';
             playerNamesArray.forEach(name => {
                 const player = players[name];
@@ -946,7 +973,6 @@
                 playerScoresDisplayBottom.appendChild(playerDiv);
             });
 
-            // Update scores above player buttons
             document.querySelectorAll('.player-button-wrapper').forEach(wrapper => {
                 const playerName = wrapper.querySelector('.player-button').dataset.playerName;
                 const scoreSpan = wrapper.querySelector('.player-score-top');
@@ -975,6 +1001,7 @@
                 button.addEventListener('click', () => {
                     manuallySelectedPlayer = name;
                     updatePlayerButtons();
+                    updateHelperButtonsState(); // وضعیت دکمه‌ها برای کاربر جدید آپدیت شود
                 });
                 wrapper.appendChild(button);
                 playerButtonsContainer.appendChild(wrapper);
@@ -986,88 +1013,92 @@
         function updatePlayerButtons() {
             document.querySelectorAll('.player-button').forEach(button => {
                 button.classList.remove('active-player');
-                if (manuallySelectedPlayer === button.dataset.playerName) {
-                    button.classList.add('active-player');
-                } 
-                else if (!manuallySelectedPlayer && playerNamesArray[currentPlayerAutoIndex] === button.dataset.playerName) {
+                const currentPlayerName = manuallySelectedPlayer || playerNamesArray[currentPlayerAutoIndex];
+                if (button.dataset.playerName === currentPlayerName) {
                     button.classList.add('active-player');
                 }
             });
         }
 
-        // --- قابلیت 50-50 ---
+        // --- توابع کمکی ---
+
         function handleFiftyFifty() {
-            if (!currentQuestion) {
-                alert('ابتدا یک سوال نمایش داده شود.');
-                return;
-            }
-
-            let currentPlayerName;
-            if (manuallySelectedPlayer) {
-                currentPlayerName = manuallySelectedPlayer;
-            } else {
-                currentPlayerName = playerNamesArray[currentPlayerAutoIndex];
-            }
-
-            if (!currentPlayerName) {
-                alert('خطا: کاربر فعلی یافت نشد. لطفاً مسابقه را مجدداً شروع کنید.');
-                return;
-            }
-
+            if (!currentQuestion) return;
+            let currentPlayerName = manuallySelectedPlayer || playerNamesArray[currentPlayerAutoIndex];
             const player = players[currentPlayerName];
 
             if (currentQuestion.difficulty !== 'سخت' && currentQuestion.difficulty !== 'خیلی سخت') {
-                alert('قابلیت ۵۰-۵۰ فقط برای سوالات سخت و خیلی سخت قابل استفاده است.');
+                alert('قابلیت ۵۰-۵۰ فقط برای سوالات سخت و خیلی سخت است.');
+                return;
+            }
+            if (player.fiftyFiftyUsed >= 2) {
+                alert(`شما قبلاً ${toFarsiNumber(2)} بار از این امکان استفاده کرده‌اید.`);
                 return;
             }
 
-            const optionsList = questionsContainer.querySelector('.options-list');
-            const removedOptions = optionsList.querySelectorAll('.removed');
-            if (removedOptions.length > 0) {
-                alert('۵۰-۵۰ قبلاً برای این سوال استفاده شده است.');
-                return;
-            }
-
-            // Apply penalty for 50-50 usage only if negative scoring is NOT disabled
-            if (!isNegativeScoringDisabled) {
-                if (player.fiftyFiftyUsed === 0) {
-                    player.score -= 0.5;
-                } else {
-                    player.score -= 1;
-                }
-            }
             player.fiftyFiftyUsed++;
-            updatePlayerScoresDisplay();
-
-            const allOptions = Array.from(optionsList.children);
-            const correctAnswerText = currentQuestion.correctAnswer;
             
-            const incorrectOptions = allOptions.filter(li => !li.textContent.includes(correctAnswerText));
+            const optionsList = questionsContainer.querySelector('.options-list');
+            const incorrectOptions = Array.from(optionsList.children).filter(li => !li.textContent.includes(currentQuestion.correctAnswer));
             
-            let removedCount = 0;
-            while (removedCount < 2 && incorrectOptions.length > 0) {
-                const randomIndex = Math.floor(Math.random() * incorrectOptions.length);
-                const optionToRemove = incorrectOptions.splice(randomIndex, 1)[0];
-                if (optionToRemove) {
-                    optionToRemove.classList.add('removed');
-                    removedCount++;
+            for (let i = 0; i < 2; i++) {
+                if (incorrectOptions.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * incorrectOptions.length);
+                    incorrectOptions.splice(randomIndex, 1)[0].classList.add('removed');
                 }
             }
-            fiftyFiftyBtn.disabled = true;
+            updateHelperButtonsState();
         }
 
-        function updateFiftyFiftyButtonState() {
-             if (currentQuestion && (currentQuestion.difficulty === 'سخت' || currentQuestion.difficulty === 'خیخت')) {
-                 const optionsList = questionsContainer.querySelector('.options-list');
-                 if (optionsList && optionsList.querySelectorAll('.removed').length === 0) {
-                    fiftyFiftyBtn.disabled = false;
-                 } else {
-                    fiftyFiftyBtn.disabled = true;
-                 }
-            } else {
+        function handleTavakkol() {
+            if (!currentQuestion) return;
+            let currentPlayerName = manuallySelectedPlayer || playerNamesArray[currentPlayerAutoIndex];
+            const player = players[currentPlayerName];
+
+            if (player.tavakkolUsed >= 2) {
+                alert(`شما قبلاً ${toFarsiNumber(2)} بار از گزینه "توکل به خدا" استفاده کرده‌اید.`);
+                return;
+            }
+            
+            player.tavakkolUsed++;
+            
+            const optionsList = questionsContainer.querySelector('.options-list');
+            const incorrectOptions = Array.from(optionsList.children)
+                .filter(li => !li.textContent.includes(currentQuestion.correctAnswer) && !li.classList.contains('removed'));
+
+            if (incorrectOptions.length > 0) {
+                const optionToRemove = incorrectOptions[Math.floor(Math.random() * incorrectOptions.length)];
+                optionToRemove.classList.add('removed');
+            }
+            updateHelperButtonsState();
+        }
+
+        function updateHelperButtonsState() {
+            if (!currentQuestion) {
                 fiftyFiftyBtn.disabled = true;
+                tavakkolBtn.disabled = true;
+                return;
+            }
+
+            const currentPlayerName = manuallySelectedPlayer || playerNamesArray[currentPlayerAutoIndex];
+            const player = players[currentPlayerName];
+            const isAnswered = questionsContainer.querySelector('.options-list .answered');
+
+            // 50-50 Button State
+            const canUseFiftyFifty = currentQuestion.difficulty === 'سخت' || currentQuestion.difficulty === 'خیلی سخت';
+            fiftyFiftyBtn.disabled = player.fiftyFiftyUsed >= 2 || !canUseFiftyFifty || isAnswered;
+
+            // Tavakkol Button State
+            tavakkolBtn.disabled = player.tavakkolUsed >= 2 || isAnswered;
+            
+            // Disable both if any option is already removed (to prevent using both on one question)
+            const isAnyOptionRemoved = questionsContainer.querySelector('.options-list .removed');
+            if(isAnyOptionRemoved){
+                fiftyFiftyBtn.disabled = true;
+                tavakkolBtn.disabled = true;
             }
         }
+
 
         // --- نمایش نتایج نهایی ---
         function showResults() {
@@ -1086,6 +1117,7 @@
                     <br> پاسخ صحیح: ${toFarsiNumber(data.correct)}
                     <br> پاسخ غلط: ${toFarsiNumber(data.wrong)}
                     <br> دفعات استفاده از ۵۰-۵۰: ${toFarsiNumber(data.fiftyFiftyUsed)}
+                    <br> دفعات استفاده از توکل به خدا: ${toFarsiNumber(data.tavakkolUsed)}
                 `;
                 resultsList.appendChild(listItem);
             });
@@ -1106,23 +1138,13 @@
                 playerNamesArray: playerNamesArray,
                 currentPlayerAutoIndex: currentPlayerAutoIndex,
                 availableQuestionIndices: availableQuestionIndices,
+                categoryUsageCount: categoryUsageCount, // ذخیره شمارنده دسته‌بندی
                 activeCategories: Array.from(document.querySelectorAll('#category-multiselect input[name="category"]:checked')).map(checkbox => checkbox.value),
                 activeDifficulties: Array.from(document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]:checked')).map(checkbox => checkbox.value),
-                // Save scoring settings
                 scoring: {
-                    correct: {
-                        'آسان': parseFloat(easyCorrectPointsInput.value),
-                        'متوسط': parseFloat(mediumCorrectPointsInput.value),
-                        'سخت': parseFloat(hardCorrectPointsInput.value),
-                        'خیلی سخت': parseFloat(veryHardCorrectPointsInput.value)
-                    },
-                    incorrect: {
-                        'آسان': parseFloat(easyIncorrectPointsInput.value),
-                        'متوسط': parseFloat(mediumIncorrectPointsInput.value),
-                        'سخت': parseFloat(hardIncorrectPointsInput.value),
-                        'خیلی سخت': parseFloat(veryHardIncorrectPointsInput.value)
-                    },
-                    disableNegative: disableNegativeScoringCheckbox.checked
+                    correct: currentDifficultyPointsCorrect,
+                    incorrect: currentDifficultyPointsIncorrect,
+                    disableNegative: isNegativeScoringDisabled
                 }
             };
             
@@ -1148,41 +1170,43 @@
             
             fileInput.onchange = (e) => {
                 const file = e.target.files[0];
-                if (!file) {
-                    return;
-                }
+                if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     try {
                         const savedState = event.target.result;
                         const gameState = JSON.parse(savedState);
                         
-                        players = gameState.players;
+                        // بازگردانی داده‌های بازیکنان با مقادیر پیش‌فرض برای سازگاری
                         playerNamesArray = gameState.playerNamesArray;
-                        currentPlayerAutoIndex = gameState.currentPlayerAutoIndex;
+                        players = {};
+                        playerNamesArray.forEach(name => {
+                            const pData = gameState.players[name];
+                            players[name] = {
+                                score: pData.score || 0,
+                                correct: pData.correct || 0,
+                                wrong: pData.wrong || 0,
+                                fiftyFiftyUsed: pData.fiftyFiftyUsed || 0,
+                                tavakkolUsed: pData.tavakkolUsed || 0,
+                            };
+                        });
+                        
+                        currentPlayerAutoIndex = gameState.currentPlayerAutoIndex || 0;
                         availableQuestionIndices = gameState.availableQuestionIndices;
+                        categoryUsageCount = gameState.categoryUsageCount || {}; // بارگذاری شمارنده
 
                         // Restore filter states
-                        document.querySelectorAll('#category-multiselect input[name="category"]').forEach(checkbox => {
-                            checkbox.checked = false;
-                        });
                         if (gameState.activeCategories) {
-                            gameState.activeCategories.forEach(cat => {
-                                const checkbox = document.querySelector(`#category-multiselect input[name="category"][value="${cat}"]`);
-                                if (checkbox) checkbox.checked = true;
+                             document.querySelectorAll('#category-multiselect input[name="category"]').forEach(cb => {
+                                cb.checked = gameState.activeCategories.includes(cb.value);
                             });
                         }
-
-                        document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]').forEach(checkbox => {
-                            checkbox.checked = false;
-                        });
                         if (gameState.activeDifficulties) {
-                            gameState.activeDifficulties.forEach(diff => {
-                                const checkbox = document.querySelector(`#difficulty-multiselect input[name="difficulty"][value="${diff}"]`);
-                                if (checkbox) checkbox.checked = true;
+                            document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]').forEach(cb => {
+                                cb.checked = gameState.activeDifficulties.includes(cb.value);
                             });
                         }
-
+                        
                         // Restore scoring settings
                         if (gameState.scoring) {
                             easyCorrectPointsInput.value = gameState.scoring.correct['آسان'];
@@ -1194,54 +1218,34 @@
                             veryHardCorrectPointsInput.value = gameState.scoring.correct['خیلی سخت'];
                             veryHardIncorrectPointsInput.value = gameState.scoring.incorrect['خیلی سخت'];
                             disableNegativeScoringCheckbox.checked = gameState.scoring.disableNegative;
-                            updateScoringSettings(); // Apply loaded settings
+                            updateScoringSettings();
                         }
-
-
-                        // Update player input fields based on loaded playerNamesArray
+                        
+                        // Update player input fields
                         playerInputsDiv.innerHTML = '';
                         playerCount = 0;
-                        gameState.playerNamesArray.forEach((name, index) => {
-                            playerCount++;
-                            const inputWrapper = document.createElement('div');
-                            inputWrapper.className = 'player-input-wrapper';
-                            inputWrapper.innerHTML = `
-                                <label for="player${playerCount}">نام شرکت‌کننده ${toFarsiNumber(playerCount)}:</label>
-                                <input type="text" id="player${playerCount}" value="${name}" required>
-                            `;
-                            playerInputsDiv.appendChild(inputWrapper);
+                        gameState.playerNamesArray.forEach(name => {
+                            addPlayerInput();
+                            document.getElementById(`player${playerCount}`).value = name;
                         });
-                        if (playerCount >= maxPlayers) {
-                            addPlayerBtn.style.display = 'none';
-                        } else {
-                            addPlayerBtn.style.display = 'block';
-                        }
 
-
-                        // If loading from user input section, show quiz section
-                        if (userInputSection.style.display !== 'none') {
-                           userInputSection.style.display = 'none';
-                           quizSection.style.display = 'block';
-                        }
-
+                        // Switch view
+                        userInputSection.style.display = 'none';
+                        quizSection.style.display = 'block';
 
                         loadQuestionsAndSetupQuiz(false).then(() => {
                             populatePlayerButtons();
                             updatePlayerScoresDisplay();
-                            alert('بازی با موفقیت از فایل بارگذاری شد!');
-                        }).catch(error => {
-                            alert('خطا در بارگذاری سوالات پس از بارگذاری فایل: ' + error.message);
-                            console.error("Error loading questions after file load:", error);
+                            alert('بازی با موفقیت بارگذاری شد!');
                         });
 
-                    } catch (e) {
-                        alert('خطا در بارگذاری بازی از فایل: فرمت فایل صحیح نیست یا خراب شده است.' + e);
-                        console.error("Error parsing saved game file:", e);
+                    } catch (err) {
+                        alert('خطا در بارگذاری بازی: فرمت فایل صحیح نیست.' + err);
+                        console.error("Error parsing saved game file:", err);
                     }
                 };
                 reader.readAsText(file);
             };
-            
             fileInput.click();
         });
 
