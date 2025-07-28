@@ -30,40 +30,40 @@
         body {
             font-family: 'Vazirmatn', sans-serif;
             background-color: var(--background-light);
-            margin: 0; /* حذف margin */
-            padding: 0; /* حذف padding */
+            margin: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             color: var(--text-dark);
             line-height: 1.6;
-            min-height: 100vh; /* برای پوشش کل ارتفاع صفحه */
+            min-height: 100vh;
         }
 
         /* Styles for the header title */
         .page-header {
             width: 100%;
-            background-color: var(--primary-color); /* رنگ آبی برای پس زمینه */
-            padding: 20px 0; /* فضای بالا و پایین */
+            background-color: var(--primary-color);
+            padding: 15px 0; /* کاهش padding */
             text-align: center;
             box-shadow: 0 2px 10px var(--shadow-light);
-            margin-bottom: 0; /* نزدیک شدن به بالا */
+            margin-bottom: 0;
         }
 
         .page-header h1 {
-            color: white; /* متن سفید */
-            margin: 0; /* حذف margin پیش فرض h1 */
-            font-size: 2.5em; /* اندازه فونت عنوان */
+            color: white;
+            margin: 0;
+            font-size: 1.8em; /* کوچکتر شدن اندازه فونت عنوان */
         }
 
         .container {
             background-color: var(--background-card);
-            padding: 20px; /* کاهش padding برای نمایش بهتر در موبایل */
+            padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 20px var(--shadow-light);
             width: 95%;
-            max-width: 960px; /* افزایش حداکثر عرض کانتینر */
-            margin: 20px auto; /* کمی فاصله از بالا و پایین و وسط چین */
+            max-width: 960px;
+            margin: 20px auto;
             box-sizing: border-box;
         }
 
@@ -263,7 +263,7 @@
             align-items: center;
             margin-bottom: 8px;
             cursor: pointer;
-            font-size: 0.9em; /* کوچکتر شدن فونت دسته‌بندی‌ها و درجه‌بندی‌ها */
+            font-size: 0.9em;
             color: var(--text-dark);
             font-weight: 400;
         }
@@ -272,7 +272,7 @@
         }
         .multiselect-container input[type="checkbox"] {
             margin-left: 8px;
-            transform: scale(1.1); /* کمی کوچک‌تر از قبل */
+            transform: scale(1.1);
         }
 
         /* Smaller buttons for 50-50 and End Quiz */
@@ -299,7 +299,6 @@
             background-color: var(--primary-color);
             color: white;
             padding: 12px 25px;
-            /* border: 1px solid black; */ /* Removed black border */
             border: none; /* اطمینان از حذف border */
             border-radius: 8px;
             font-size: 1.05em;
@@ -335,16 +334,16 @@
             transform: none;
         }
 
-        /* Save/Load buttons style */
+        /* Save/Load buttons style - moved to quiz-controls */
         .save-load-buttons {
             display: flex;
             justify-content: center;
             gap: 10px;
-            margin-top: 20px;
-            flex-wrap: wrap; /* برای نمایش بهتر در موبایل */
+            margin-top: 15px; /* کمی فاصله از دکمه‌های بالا */
+            flex-wrap: wrap;
         }
         .save-load-buttons button {
-            background-color: #6c757d; /* خاکستری */
+            background-color: #6c757d;
             color: white;
             padding: 10px 15px;
             border: none;
@@ -352,6 +351,9 @@
             cursor: pointer;
             font-size: 0.9em;
             transition: background-color 0.3s ease;
+            width: auto; /* Allow buttons to size based on content */
+            flex-grow: 1; /* Allow them to grow */
+            max-width: 150px; /* Optional: limit max width if needed */
         }
         .save-load-buttons button:hover {
             background-color: #5a6268;
@@ -439,11 +441,7 @@
             <button id="add-player-btn">افزودن شرکت‌کننده</button>
             <button id="start-quiz-btn" style="margin-top: 15px;">شروع مسابقه</button>
             
-            <div class="save-load-buttons">
-                <button id="save-game-btn">ذخیره بازی</button>
-                <button id="load-game-btn">بارگذاری بازی</button>
             </div>
-        </div>
 
         <div id="quiz-section">
             <div class="player-buttons-container" id="player-buttons-container">
@@ -478,6 +476,10 @@
                 </div>
 
                 <button id="end-quiz-btn">پایان مسابقه</button>
+
+                <div class="save-load-buttons"> <button id="save-game-btn">ذخیره بازی</button>
+                    <button id="load-game-btn">بارگذاری بازی</button>
+                </div>
             </div>
             <div id="player-scores-display-bottom">
                 </div>
@@ -506,8 +508,8 @@
         const difficultyMultiselect = document.getElementById('difficulty-multiselect');
         const fiftyFiftyBtn = document.getElementById('fifty-fifty-btn');
         const playerScoresDisplayBottom = document.getElementById('player-scores-display-bottom');
-        const saveGameBtn = document.getElementById('save-game-btn'); // New
-        const loadGameBtn = document.getElementById('load-game-btn'); // New
+        const saveGameBtn = document.getElementById('save-game-btn');
+        const loadGameBtn = document.getElementById('load-game-btn');
 
         let playerCount = 0;
         const maxPlayers = 10;
@@ -518,7 +520,7 @@
         let playerNamesArray = [];
         let currentPlayerAutoIndex = 0;
         let manuallySelectedPlayer = null;
-        let availableQuestionIndices = []; // To track which questions haven't been asked yet
+        let availableQuestionIndices = [];
 
         const difficultyPointsCorrect = {
             'آسان': 1,
@@ -596,7 +598,7 @@
 
             userInputSection.style.display = 'none';
             quizSection.style.display = 'block';
-            loadQuestionsAndSetupQuiz(true); // Pass true to reset questions for new game
+            loadQuestionsAndSetupQuiz(true);
             updatePlayerScoresDisplay();
             populatePlayerButtons();
         });
@@ -614,7 +616,6 @@
                 populateCategoryFilter();
 
                 if (resetQuestions) {
-                    // Initialize availableQuestionIndices for a new game
                     availableQuestionIndices = Array.from({ length: allQuestions.length }, (_, i) => i);
                 }
                 displayNextQuestion();
@@ -676,7 +677,6 @@
             const activeDifficulties = Array.from(document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]:checked'))
                                             .map(checkbox => checkbox.value);
 
-            // Filter available questions based on category and difficulty AND not already asked
             const filteredIndices = availableQuestionIndices.filter(index => {
                 const q = allQuestions[index];
                 const matchesCategory = activeCategories.includes(q.category);
@@ -695,7 +695,6 @@
             const selectedQuestionIndex = filteredIndices[randomIndexInFiltered];
             currentQuestion = allQuestions[selectedQuestionIndex];
 
-            // Remove the asked question's index from availableQuestionIndices
             availableQuestionIndices = availableQuestionIndices.filter(index => index !== selectedQuestionIndex);
 
             questionsContainer.innerHTML = '';
@@ -787,7 +786,6 @@
                 const player = players[name];
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'player-score-item-bottom';
-                // Convert score to Farsi number for display
                 const scoreDisplay = (player.score % 1 !== 0) ? toFarsiNumber(player.score.toFixed(1)) : toFarsiNumber(player.score);
                 playerDiv.innerHTML = `
                     <strong>${name}</strong><br>
@@ -815,7 +813,7 @@
 
                 const scoreSpan = document.createElement('span');
                 scoreSpan.className = 'player-score-top';
-                scoreSpan.textContent = 'امتیاز: ۰'; // Initial Farsi 0
+                scoreSpan.textContent = 'امتیاز: ۰';
                 wrapper.appendChild(scoreSpan);
 
                 const button = document.createElement('button');
@@ -922,12 +920,10 @@
             resultsSection.style.display = 'block';
             resultsList.innerHTML = '';
 
-            // Sort players by score in descending order
             const sortedPlayers = Object.entries(players).sort(([, a], [, b]) => b.score - a.score);
 
             sortedPlayers.forEach(([name, data]) => {
                 const listItem = document.createElement('li');
-                // Convert all numbers to Farsi for final results display
                 const scoreDisplay = (data.score % 1 !== 0) ? toFarsiNumber(data.score.toFixed(1)) : toFarsiNumber(data.score);
                 listItem.innerHTML = `
                     <strong>${name}:</strong>
@@ -947,8 +943,6 @@
                 playerNamesArray: playerNamesArray,
                 currentPlayerAutoIndex: currentPlayerAutoIndex,
                 availableQuestionIndices: availableQuestionIndices,
-                // Do NOT save currentQuestion, it will be regenerated
-                // Do NOT save references to DOM elements
             };
             try {
                 localStorage.setItem('quizGameState', JSON.stringify(gameState));
@@ -969,16 +963,12 @@
                     currentPlayerAutoIndex = gameState.currentPlayerAutoIndex;
                     availableQuestionIndices = gameState.availableQuestionIndices;
 
-                    // Hide user input section and show quiz section
                     userInputSection.style.display = 'none';
                     quizSection.style.display = 'block';
 
-                    // Re-load questions and set up quiz based on loaded state
-                    // We call loadQuestionsAndSetupQuiz without true to not reset availableQuestionIndices
                     loadQuestionsAndSetupQuiz(false).then(() => {
-                        // After questions are loaded and currentQuestion is displayed:
-                        populatePlayerButtons(); // Re-create player buttons with loaded data
-                        updatePlayerScoresDisplay(); // Update scores display
+                        populatePlayerButtons();
+                        updatePlayerScoresDisplay();
                         alert('بازی با موفقیت بارگذاری شد!');
                     });
 
