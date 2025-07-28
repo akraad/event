@@ -19,6 +19,12 @@
             --shadow-light: rgba(0, 0, 0, 0.08); /* سایه روشن */
             --fifty-fifty-color: #ffc107; /* رنگ برای دکمه 50-50 */
             --active-player-color: #28a745; /* رنگ برای کاربر فعال */
+
+            /* رنگ بندی جدید برای امتیازات پایین صفحه */
+            --score-bg-color: #e3f2fd; /* آبی بسیار روشن */
+            --score-border-color: #90caf9; /* آبی روشن تر */
+            --score-text-color: #1a237e; /* آبی تیره برای متن */
+            --score-name-color: #0d47a1; /* آبی تیره تر برای نام */
         }
 
         body {
@@ -37,10 +43,10 @@
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 4px 20px var(--shadow-light);
-            width: 100%;
-            max-width: 800px;
+            width: 95%; /* افزایش عرض کانتینر */
+            max-width: 960px; /* افزایش حداکثر عرض کانتینر */
             margin-bottom: 20px;
-            box-sizing: border-box; /* اطمینان از اینکه padding بر روی عرض تاثیر نگذارد */
+            box-sizing: border-box;
         }
         h1, h2 {
             color: var(--primary-color);
@@ -61,7 +67,7 @@
             font-size: 1.1em;
         }
         .user-input input[type="text"] {
-            width: calc(100% - 24px); /* کمی فاصله برای padding */
+            width: calc(100% - 24px);
             padding: 12px;
             margin-bottom: 15px;
             border: 1px solid var(--border-color);
@@ -74,7 +80,7 @@
             border-color: var(--primary-color);
             outline: none;
         }
-        .user-input button, .quiz-controls button {
+        .user-input button {
             background-color: var(--primary-color);
             color: white;
             padding: 14px 25px;
@@ -87,12 +93,12 @@
             width: 100%;
             margin-bottom: 10px;
         }
-        .user-input button:hover, .quiz-controls button:hover {
-            background-color: #3a7bd5; /* کمی تیره تر */
+        .user-input button:hover {
+            background-color: #3a7bd5;
             transform: translateY(-2px);
         }
         #quiz-section {
-            display: none; /* در ابتدا مخفی است */
+            display: none;
             border-top: 1px solid var(--border-color);
             padding-top: 30px;
             margin-top: 20px;
@@ -104,17 +110,19 @@
             margin-bottom: 25px;
             background-color: #fcfcfc;
             box-shadow: 0 2px 10px var(--shadow-light);
+            width: 100%; /* مطمئن شوید که سؤال و گزینه‌ها عرض کامل را می‌گیرند */
+            box-sizing: border-box;
         }
         .question-meta {
             font-size: 0.95em;
             color: var(--secondary-color);
             margin-bottom: 15px;
-            text-align: left; /* برای نمایش در سمت چپ */
+            text-align: left;
             font-weight: 500;
         }
         .question-text {
-            font-size: 1.0em; /* کاهش بیشتر اندازه فونت */
-            font-weight: 400; /* حذف ضخامت */
+            font-size: 1.0em;
+            font-weight: 400;
             color: var(--text-dark);
             margin-bottom: 25px;
             text-align: right;
@@ -126,13 +134,13 @@
         }
         .options-list li {
             background-color: #f0f0f0;
-            padding: 12px 18px; /* کاهش padding */
-            margin-bottom: 10px; /* کاهش margin */
+            padding: 12px 18px;
+            margin-bottom: 10px;
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
             border: 1px solid var(--border-color);
-            font-size: 0.95em; /* کاهش اندازه فونت */
+            font-size: 0.95em;
             color: var(--text-dark);
             font-weight: 400;
         }
@@ -142,26 +150,25 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         }
         .options-list li.correct {
-            background-color: var(--success-color); /* سبز */
+            background-color: var(--success-color);
             border-color: #4CAF50;
             color: white;
             font-weight: 500;
         }
         .options-list li.incorrect {
-            background-color: var(--error-color); /* قرمز */
+            background-color: var(--error-color);
             border-color: #f44336;
             color: white;
             font-weight: 500;
         }
         .options-list li.answered {
-            pointer-events: none; /* Disable clicking after an answer */
+            pointer-events: none;
             opacity: 0.9;
         }
-        /* Style for 50-50 removed options */
         .options-list li.removed {
             opacity: 0.4;
             pointer-events: none;
-            background-color: #fdfdff; /* Very light, almost white */
+            background-color: #fdfdff;
             color: #b0b0b0;
             text-decoration: line-through;
         }
@@ -169,31 +176,31 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 8px; /* کاهش فاصله بین دکمه ها */
-            margin-bottom: 20px; /* کاهش margin */
+            gap: 8px;
+            margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 2px solid var(--primary-color);
         }
-        .player-button-wrapper { /* New wrapper for button and score */
+        .player-button-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px; /* Small gap between score and button */
+            gap: 2px;
         }
-        .player-score-top { /* Style for score above button */
-            font-size: 0.75em; /* Smaller font for score */
-            color: var(--secondary-color); /* Lighter color */
-            opacity: 0.8; /* Slightly transparent */
+        .player-score-top {
+            font-size: 0.75em;
+            color: var(--secondary-color);
+            opacity: 0.8;
             font-weight: 500;
         }
         .player-button {
             background-color: #e6f7ff;
             color: var(--primary-color);
             border: 1px solid #cceeff;
-            padding: 8px 15px; /* کاهش padding */
-            border-radius: 15px; /* برای ظاهر دکمه‌ای گردتر و کوچکتر */
+            padding: 8px 15px;
+            border-radius: 15px;
             cursor: pointer;
-            font-size: 0.9em; /* کاهش اندازه فونت */
+            font-size: 0.9em;
             font-weight: 500;
             transition: background-color 0.2s ease, transform 0.2s ease;
         }
@@ -214,7 +221,7 @@
             margin-top: 25px;
         }
         .quiz-controls label {
-            font-size: 1.0em; /* کمی کوچکتر */
+            font-size: 1.0em;
             font-weight: 500;
             color: var(--text-dark);
             margin-bottom: 5px;
@@ -228,7 +235,7 @@
             background-color: var(--background-card);
             width: 100%;
             box-sizing: border-box;
-            max-height: 200px; /* Adjust as needed */
+            max-height: 200px;
             overflow-y: auto;
             margin-bottom: 10px;
         }
@@ -239,21 +246,39 @@
             cursor: pointer;
             font-size: 1.0em;
             color: var(--text-dark);
-            font-weight: 400; /* reset font-weight */
+            font-weight: 400;
         }
         .multiselect-container label:last-child {
             margin-bottom: 0;
         }
         .multiselect-container input[type="checkbox"] {
-            margin-left: 8px; /* For RTL layout */
-            transform: scale(1.2); /* Make checkbox slightly larger */
+            margin-left: 8px;
+            transform: scale(1.2);
         }
 
-
-        .quiz-controls button#end-quiz-btn {
-            background-color: var(--error-color); /* قرمز برای پایان مسابقه */
+        /* Smaller buttons for Next Question and 50-50 */
+        .quiz-controls button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px; /* کاهش padding */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em; /* کاهش اندازه فونت */
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            width: 100%;
+            margin-bottom: 10px;
         }
-        .quiz-controls button#end-quiz-btn:hover {
+        .quiz-controls button:hover {
+            background-color: #3a7bd5;
+            transform: translateY(-2px);
+        }
+
+        button#end-quiz-btn {
+            background-color: var(--error-color);
+        }
+        button#end-quiz-btn:hover {
             background-color: #c9302c;
         }
         button#fifty-fifty-btn {
@@ -287,7 +312,7 @@
             margin-top: 20px;
         }
         #results-list li {
-            background-color: #e9f7ef; /* سبز روشن تر */
+            background-color: #e9f7ef;
             padding: 18px 25px;
             margin-bottom: 15px;
             border-radius: 10px;
@@ -304,35 +329,35 @@
             margin-bottom: 8px;
         }
 
-        /* Player scores at the bottom */
+        /* Player scores at the bottom - smaller and better color scheme */
         #player-scores-display-bottom {
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 30px;
-            padding-top: 20px;
+            margin-top: 20px; /* کاهش margin-top */
+            padding-top: 15px; /* کاهش padding-top */
             border-top: 1px solid var(--border-color);
-            gap: 15px;
+            gap: 10px; /* کاهش فاصله */
         }
         .player-score-item-bottom {
-            background-color: #e6f7ff;
-            padding: 12px 20px;
-            border-radius: 8px;
-            min-width: 140px;
+            background-color: var(--score-bg-color); /* رنگ جدید */
+            padding: 8px 15px; /* کاهش padding */
+            border-radius: 6px; /* کمی گردتر */
+            min-width: 120px; /* کاهش حداقل عرض */
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            border: 1px solid #cceeff;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08); /* سایه کوچک تر */
+            border: 1px solid var(--score-border-color); /* رنگ border جدید */
         }
         .player-score-item-bottom strong {
             display: block;
-            font-size: 1.2em;
-            margin-bottom: 5px;
-            color: var(--primary-color);
+            font-size: 1.0em; /* کاهش اندازه فونت */
+            margin-bottom: 3px; /* کاهش margin */
+            color: var(--score-name-color); /* رنگ جدید برای نام */
         }
         .player-score-item-bottom span {
-            font-size: 1.1em;
+            font-size: 0.9em; /* کاهش اندازه فونت */
             font-weight: 500;
-            color: var(--text-dark);
+            color: var(--score-text-color); /* رنگ جدید برای امتیاز */
         }
     </style>
 </head>
@@ -352,12 +377,11 @@
         <div id="quiz-section">
             <div class="player-buttons-container" id="player-buttons-container">
                 </div>
-
-            <div id="questions-container">
+            
+            <button id="next-question-btn" style="margin-bottom: 20px;">سوال بعدی</button> <div id="questions-container">
                 </div>
 
             <div class="quiz-controls">
-                <button id="next-question-btn">سوال بعدی</button>
                 <button id="fifty-fifty-btn">۵۰-۵۰ (حذف ۲ گزینه غلط)</button>
                 
                 <label>دسته‌بندی‌های فعال:</label>
@@ -401,7 +425,7 @@
         const quizSection = document.getElementById('quiz-section');
         const questionsContainer = document.getElementById('questions-container');
         const playerButtonsContainer = document.getElementById('player-buttons-container');
-        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const nextQuestionBtn = document.getElementById('next-question-btn'); // Still need reference
         const endQuizBtn = document.getElementById('end-quiz-btn');
         const resultsSection = document.getElementById('results-section');
         const resultsList = document.getElementById('results-list');
@@ -490,10 +514,8 @@
             userInputSection.style.display = 'none';
             quizSection.style.display = 'block';
             loadQuestionsAndSetupQuiz();
-            // Initial call to updatePlayerScoresDisplay for bottom scores
-            updatePlayerScoresDisplay(); 
-            // Initial call to populatePlayerButtons and set active player and top scores
-            populatePlayerButtons(); 
+            updatePlayerScoresDisplay();
+            populatePlayerButtons();
         });
 
         // --- مدیریت خواندن و نمایش سوالات ---
@@ -606,7 +628,7 @@
             updateFiftyFiftyButtonState();
             
             manuallySelectedPlayer = null;
-            updatePlayerButtons(); // Update active player button
+            updatePlayerButtons();
         }
 
         function handleOptionClick(event) {
@@ -650,12 +672,12 @@
                     correctOptionElement.classList.add('correct');
                 }
             }
-            updatePlayerScoresDisplay(); // Update scores at the bottom
+            updatePlayerScoresDisplay();
             
             if (!manuallySelectedPlayer) {
                 currentPlayerAutoIndex = (currentPlayerAutoIndex + 1) % playerNamesArray.length;
             }
-            updatePlayerButtons(); // Update active player button and scores above them
+            updatePlayerButtons();
         }
 
         nextQuestionBtn.addEventListener('click', displayNextQuestion);
@@ -698,7 +720,6 @@
 
                 const scoreSpan = document.createElement('span');
                 scoreSpan.className = 'player-score-top';
-                // Initial score is 0, will be updated by updatePlayerScoresDisplay
                 scoreSpan.textContent = 'امتیاز: 0'; 
                 wrapper.appendChild(scoreSpan);
 
@@ -713,8 +734,8 @@
                 wrapper.appendChild(button);
                 playerButtonsContainer.appendChild(wrapper);
             });
-            updatePlayerButtons(); // Set initial active player
-            updatePlayerScoresDisplay(); // Ensure initial scores are displayed on top buttons
+            updatePlayerButtons();
+            updatePlayerScoresDisplay();
         }
 
         function updatePlayerButtons() {
