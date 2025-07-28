@@ -18,6 +18,7 @@
             --error-color: #d9534f;     /* قرمز خطا */
             --shadow-light: rgba(0, 0, 0, 0.08); /* سایه روشن */
             --fifty-fifty-color: #ffc107; /* رنگ برای دکمه 50-50 */
+            --active-player-color: #28a745; /* رنگ برای کاربر فعال */
         }
 
         body {
@@ -164,16 +165,36 @@
             color: #b0b0b0;
             text-decoration: line-through;
         }
-        .current-player-display {
-            text-align: center;
+        .player-buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
             margin-bottom: 25px;
-            font-size: 1.2em;
-            font-weight: 700;
-            color: var(--primary-color);
+            padding-bottom: 15px;
             border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
         }
-
+        .player-button {
+            background-color: #e6f7ff;
+            color: var(--primary-color);
+            border: 1px solid #cceeff;
+            padding: 10px 18px;
+            border-radius: 20px; /* برای ظاهر دکمه‌ای گردتر */
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 500;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .player-button:hover {
+            background-color: #cceeff;
+            transform: translateY(-2px);
+        }
+        .player-button.active-player {
+            background-color: var(--active-player-color);
+            color: white;
+            border-color: var(--active-player-color);
+            box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+        }
         .quiz-controls {
             display: flex;
             flex-direction: column;
@@ -299,14 +320,14 @@
         </div>
 
         <div id="quiz-section">
-            <div class="current-player-display">
-                <span id="current-player-name"></span>
-            </div>
+            <div class="player-buttons-container" id="player-buttons-container">
+                </div>
 
             <div id="questions-container">
                 </div>
 
             <div class="quiz-controls">
+                <button id="next-question-btn">سوال بعدی</button>
                 <button id="fifty-fifty-btn">۵۰-۵۰ (حذف ۲ گزینه غلط)</button>
                 <label for="category-select">انتخاب دسته بندی:</label>
                 <select id="category-select">
@@ -321,7 +342,6 @@
                     <option value="سخت">سخت</option>
                     <option value="خیلی سخت">خیلی سخت</option>
                 </select>
-                <button id="next-question-btn">سوال بعدی</button>
                 <button id="end-quiz-btn">پایان مسابقه</button>
             </div>
             <div id="player-scores-display-bottom">
@@ -342,7 +362,7 @@
         const userInputSection = document.getElementById('user-input-section');
         const quizSection = document.getElementById('quiz-section');
         const questionsContainer = document.getElementById('questions-container');
-        const currentPlayerDisplay = document.getElementById('current-player-name'); // For displaying current player
+        const playerButtonsContainer = document.getElementById('player-buttons-container'); // New container for player buttons
         const nextQuestionBtn = document.getElementById('next-question-btn');
         const endQuizBtn = document.getElementById('end-quiz-btn');
         const resultsSection = document.getElementById('results-section');
@@ -359,7 +379,8 @@
         let currentQuestion = null; // Stores the currently displayed question object
         let players = {}; // Stores player names and their scores: { 'name': { score: 0, correct: 0, wrong: 0, fiftyFiftyUsed: 0 } }
         let playerNamesArray = []; // To maintain order of player names for circular turn
-        let currentPlayerIndex = 0; // Index of the current player in playerNamesArray
+        let currentPlayerAutoIndex = 0; // Index for automatic player turn
+        let manuallySelectedPlayer = null; // Stores the name of the manually selected player
 
         // امتیازدهی برای پاسخ صحیح
         const difficultyPointsCorrect = {
@@ -376,6 +397,7 @@
             'سخت': -1,
             'خیلی سخت': -0.5
         };
+
 
         // --- مدیریت ورود نام کاربران ---
 
@@ -436,7 +458,7 @@
             quizSection.style.display = 'block';
             loadQuestionsAndSetupQuiz();
             updatePlayerScoresDisplay(); // Display initial scores (all 0)
-            updateCurrentPlayerDisplay(); // Show the first player
+            populatePlayerButtons(); // Populate the player name buttons
         });
 
         // --- مدیریت خواندن و نمایش سوالات ---
@@ -505,14 +527,6 @@
         }
 
         function displayNextQuestion() {
-            // Re-enable 50-50 button for the new question
-            if (currentQuestion && (currentQuestion.difficulty === 'سخت' || currentQuestion.difficulty === 'خیلی سخت')) {
-                 fiftyFiftyBtn.disabled = false;
-            } else {
-                fiftyFiftyBtn.disabled = true; // Disable if not a hard question
-            }
-           
-
             // Apply filters
             const selectedCategory = categorySelect.value;
             const selectedDifficulty = difficultySelect.value;
@@ -558,6 +572,10 @@
             });
             // Update 50-50 button state after loading question
             updateFiftyFiftyButtonState();
+            
+            // Clear manual selection for new question
+            manuallySelectedPlayer = null;
+            updatePlayerButtons(); // Update active player button
         }
 
         function handleOptionClick(event) {
@@ -565,7 +583,14 @@
             const optionsList = clickedOption.closest('.options-list');
             const questionDifficulty = optionsList.dataset.difficulty;
 
-            const currentPlayerName = playerNamesArray[currentPlayerIndex];
+            // Determine current player: manual selection overrides auto-turn
+            let currentPlayerName;
+            if (manuallySelectedPlayer) {
+                currentPlayerName = manuallySelectedPlayer;
+            } else {
+                currentPlayerName = playerNamesArray[currentPlayerAutoIndex];
+            }
+
             if (!currentPlayerName) {
                 alert('خطا: کاربر فعلی یافت نشد. لطفاً مسابقه را مجدداً شروع کنید.');
                 return;
@@ -598,16 +623,18 @@
                 }
             }
             updatePlayerScoresDisplay();
-            // Move to the next player
-            currentPlayerIndex = (currentPlayerIndex + 1) % playerNamesArray.length;
-            updateCurrentPlayerDisplay(); // Update display for next player
+            
+            // Move to the next player only if no manual selection was made for this question
+            if (!manuallySelectedPlayer) {
+                currentPlayerAutoIndex = (currentPlayerAutoIndex + 1) % playerNamesArray.length;
+            }
+            updatePlayerButtons(); // Update active player button for next turn
         }
 
         nextQuestionBtn.addEventListener('click', displayNextQuestion);
         endQuizBtn.addEventListener('click', showResults);
         fiftyFiftyBtn.addEventListener('click', handleFiftyFifty);
-
-
+        
         // --- مدیریت امتیازات و انتخاب کاربر ---
 
         function updatePlayerScoresDisplay() {
@@ -626,12 +653,35 @@
             });
         }
 
-        function updateCurrentPlayerDisplay() {
-            if (playerNamesArray.length > 0) {
-                currentPlayerDisplay.textContent = `نوبت: ${playerNamesArray[currentPlayerIndex]}`;
-            } else {
-                currentPlayerDisplay.textContent = '';
-            }
+        function populatePlayerButtons() {
+            playerButtonsContainer.innerHTML = '';
+            playerNamesArray.forEach((name, index) => {
+                const button = document.createElement('button');
+                button.className = 'player-button';
+                button.textContent = name;
+                button.dataset.playerName = name; // Store player name in a data attribute
+                button.addEventListener('click', () => {
+                    manuallySelectedPlayer = name; // Set manual selection
+                    updatePlayerButtons(); // Update active state
+                    // Optionally, display question immediately for selected player: displayNextQuestion();
+                });
+                playerButtonsContainer.appendChild(button);
+            });
+            updatePlayerButtons(); // Set initial active player
+        }
+
+        function updatePlayerButtons() {
+            document.querySelectorAll('.player-button').forEach(button => {
+                button.classList.remove('active-player');
+                // If manual selection exists, that player is active
+                if (manuallySelectedPlayer === button.dataset.playerName) {
+                    button.classList.add('active-player');
+                } 
+                // Otherwise, the auto-selected player is active
+                else if (!manuallySelectedPlayer && playerNamesArray[currentPlayerAutoIndex] === button.dataset.playerName) {
+                    button.classList.add('active-player');
+                }
+            });
         }
 
         // --- قابلیت 50-50 ---
@@ -641,7 +691,14 @@
                 return;
             }
 
-            const currentPlayerName = playerNamesArray[currentPlayerIndex];
+            // Determine current player: manual selection overrides auto-turn
+            let currentPlayerName;
+            if (manuallySelectedPlayer) {
+                currentPlayerName = manuallySelectedPlayer;
+            } else {
+                currentPlayerName = playerNamesArray[currentPlayerAutoIndex];
+            }
+
             if (!currentPlayerName) {
                 alert('خطا: کاربر فعلی یافت نشد. لطفاً مسابقه را مجدداً شروع کنید.');
                 return;
@@ -655,6 +712,14 @@
                 return;
             }
 
+            // Check if options have already been removed for this question
+            const optionsList = questionsContainer.querySelector('.options-list');
+            const removedOptions = optionsList.querySelectorAll('.removed');
+            if (removedOptions.length > 0) {
+                alert('۵۰-۵۰ قبلاً برای این سوال استفاده شده است.');
+                return;
+            }
+
             // Apply penalty for 50-50 usage
             if (player.fiftyFiftyUsed === 0) {
                 player.score -= 0.5; // First time penalty
@@ -665,7 +730,6 @@
             updatePlayerScoresDisplay(); // Update score display immediately
 
             // Logic to remove two incorrect options
-            const optionsList = questionsContainer.querySelector('.options-list');
             const allOptions = Array.from(optionsList.children);
             const correctAnswerText = currentQuestion.correctAnswer;
             
@@ -686,9 +750,15 @@
 
         function updateFiftyFiftyButtonState() {
              if (currentQuestion && (currentQuestion.difficulty === 'سخت' || currentQuestion.difficulty === 'خیلی سخت')) {
-                 fiftyFiftyBtn.disabled = false;
+                 // Check if 50-50 has already been used for this question
+                 const optionsList = questionsContainer.querySelector('.options-list');
+                 if (optionsList && optionsList.querySelectorAll('.removed').length === 0) {
+                    fiftyFiftyBtn.disabled = false;
+                 } else {
+                    fiftyFiftyBtn.disabled = true; // Already used for this question
+                 }
             } else {
-                fiftyFiftyBtn.disabled = true;
+                fiftyFiftyBtn.disabled = true; // Not a hard question
             }
         }
 
