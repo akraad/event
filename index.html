@@ -25,6 +25,10 @@
             --score-border-color: #90caf9; /* آبی روشن تر */
             --score-text-color: #1a237e; /* آبی تیره برای متن */
             --score-name-color: #0d47a1; /* آبی تیره تر برای نام */
+
+            /* رنگ جدید برای دکمه‌های ذخیره/بارگذاری */
+            --save-load-btn-color: #6200EE; /* بنفش عمیق */
+            --save-load-btn-hover-color: #3700B3; /* بنفش تیره‌تر */
         }
 
         body {
@@ -196,9 +200,8 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 8px;
-            margin-bottom: 10px; /* کاهش فاصله */
-            /* border-bottom: 2px solid var(--primary-color); */ /* حذف خط خاکستری */
-            padding-bottom: 0; /* حذف padding */
+            margin-bottom: 10px;
+            padding-bottom: 0;
         }
         .player-button-wrapper {
             display: flex;
@@ -343,7 +346,7 @@
             flex-wrap: wrap;
         }
         .save-load-buttons button {
-            background-color: #6c757d;
+            background-color: var(--save-load-btn-color); /* رنگ جدید */
             color: white;
             padding: 10px 15px;
             border: none;
@@ -356,43 +359,43 @@
             max-width: 150px;
         }
         .save-load-buttons button:hover {
-            background-color: #5a6268;
+            background-color: var(--save-load-btn-hover-color); /* رنگ هاور جدید */
         }
 
 
         #results-section {
             display: none;
             text-align: center;
-            padding-top: 20px; /* کاهش padding-top */
-            margin-top: 15px; /* کاهش margin-top */
+            padding-top: 20px;
+            margin-top: 15px;
             border-top: 1px solid var(--border-color);
         }
         #results-section h2 {
             color: var(--success-color);
             font-weight: 700;
-            margin-bottom: 20px; /* کاهش margin-bottom */
+            margin-bottom: 20px;
         }
         #results-list {
             list-style: none;
             padding: 0;
-            margin-top: 15px; /* کاهش margin-top */
+            margin-top: 15px;
         }
         #results-list li {
             background-color: #e9f7ef;
-            padding: 12px 18px; /* کاهش padding */
-            margin-bottom: 10px; /* کاهش margin-bottom */
-            border-radius: 8px; /* کمی گردتر */
+            padding: 12px 18px;
+            margin-bottom: 10px;
+            border-radius: 8px;
             text-align: right;
             border: 1px solid #d4edda;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03); /* سایه کوچک تر */
-            font-size: 1.0em; /* کمی کوچک تر */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+            font-size: 1.0em;
             color: var(--text-dark);
         }
         #results-list li strong {
             color: var(--primary-color);
-            font-size: 1.1em; /* کمی کوچک تر */
+            font-size: 1.1em;
             display: block;
-            margin-bottom: 5px; /* کاهش margin-bottom */
+            margin-bottom: 5px;
         }
 
         /* Player scores at the bottom - smaller and better color scheme */
@@ -442,7 +445,8 @@
             <button id="start-quiz-btn" style="margin-top: 15px;">شروع مسابقه</button>
             
             <div class="save-load-buttons">
-                <button id="load-game-btn">بارگذاری بازی</button> </div>
+                <button id="load-game-btn">بارگذاری بازی</button>
+            </div>
         </div>
 
         <div id="quiz-section">
@@ -480,7 +484,8 @@
                 <button id="end-quiz-btn">پایان مسابقه</button>
 
                 <div class="save-load-buttons">
-                    <button id="save-game-btn">ذخیره بازی</button> </div>
+                    <button id="save-game-btn">ذخیره بازی</button>
+                </div>
             </div>
             <div id="player-scores-display-bottom">
                 </div>
@@ -663,6 +668,8 @@
 
         function populateCategoryFilter() {
             const categories = new Set();
+            // Add 'زبان انگلیسی' as a default category
+            categories.add('زبان انگلیسی'); 
             allQuestions.forEach(q => categories.add(q.category));
             categoryMultiselect.innerHTML = '';
             categories.forEach(cat => {
@@ -939,36 +946,42 @@
 
         // --- قابلیت ذخیره و بارگذاری بازی ---
         saveGameBtn.addEventListener('click', () => {
+            const defaultFileName = `مسابقه_دانش_${new Date().toLocaleDateString('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}.txt`;
+            const fileName = prompt("لطفاً نامی برای فایل ذخیره وارد کنید:", defaultFileName);
+            if (fileName === null || fileName.trim() === "") {
+                alert("عملیات ذخیره سازی لغو شد.");
+                return;
+            }
+            const finalFileName = fileName.endsWith('.txt') ? fileName : `${fileName}.txt`;
+
             const gameState = {
                 players: players,
                 playerNamesArray: playerNamesArray,
                 currentPlayerAutoIndex: currentPlayerAutoIndex,
                 availableQuestionIndices: availableQuestionIndices,
-                // Include active filter states for a more complete save
                 activeCategories: Array.from(document.querySelectorAll('#category-multiselect input[name="category"]:checked')).map(checkbox => checkbox.value),
                 activeDifficulties: Array.from(document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]:checked')).map(checkbox => checkbox.value)
             };
             
-            const dataStr = JSON.stringify(gameState, null, 2); // Pretty print JSON
+            const dataStr = JSON.stringify(gameState, null, 2);
             const blob = new Blob([dataStr], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'quiz_game_state.txt'; // Set filename
+            a.download = finalFileName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url); // Clean up
+            URL.revokeObjectURL(url);
             
-            alert('بازی با موفقیت در فایل quiz_game_state.txt ذخیره شد!');
+            alert(`بازی با موفقیت در فایل ${finalFileName} ذخیره شد!`);
         });
 
         loadGameBtn.addEventListener('click', () => {
-            // Create a hidden file input to trigger file selection
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
-            fileInput.accept = '.txt'; // Accept only text files
+            fileInput.accept = '.txt';
             
             fileInput.onchange = (e) => {
                 const file = e.target.files[0];
@@ -987,17 +1000,51 @@
                         availableQuestionIndices = gameState.availableQuestionIndices;
 
                         // Restore filter states
+                        // First uncheck all, then check the active ones
                         document.querySelectorAll('#category-multiselect input[name="category"]').forEach(checkbox => {
-                            checkbox.checked = gameState.activeCategories.includes(checkbox.value);
+                            checkbox.checked = false;
                         });
+                        if (gameState.activeCategories) { // Check if activeCategories exists in saved state
+                            gameState.activeCategories.forEach(cat => {
+                                const checkbox = document.querySelector(`#category-multiselect input[name="category"][value="${cat}"]`);
+                                if (checkbox) checkbox.checked = true;
+                            });
+                        }
+
                         document.querySelectorAll('#difficulty-multiselect input[name="difficulty"]').forEach(checkbox => {
-                            checkbox.checked = gameState.activeDifficulties.includes(checkbox.value);
+                            checkbox.checked = false;
                         });
+                        if (gameState.activeDifficulties) { // Check if activeDifficulties exists in saved state
+                            gameState.activeDifficulties.forEach(diff => {
+                                const checkbox = document.querySelector(`#difficulty-multiselect input[name="difficulty"][value="${diff}"]`);
+                                if (checkbox) checkbox.checked = true;
+                            });
+                        }
+
+
+                        // Update player input fields based on loaded playerNamesArray
+                        playerInputsDiv.innerHTML = ''; // Clear existing inputs
+                        playerCount = 0; // Reset player count
+                        gameState.playerNamesArray.forEach((name, index) => {
+                            playerCount++;
+                            const inputWrapper = document.createElement('div');
+                            inputWrapper.className = 'player-input-wrapper';
+                            inputWrapper.innerHTML = `
+                                <label for="player${playerCount}">نام شرکت‌کننده ${toFarsiNumber(playerCount)}:</label>
+                                <input type="text" id="player${playerCount}" value="${name}" required>
+                            `;
+                            playerInputsDiv.appendChild(inputWrapper);
+                        });
+                        if (playerCount >= maxPlayers) {
+                            addPlayerBtn.style.display = 'none';
+                        } else {
+                            addPlayerBtn.style.display = 'block';
+                        }
+
 
                         userInputSection.style.display = 'none';
                         quizSection.style.display = 'block';
 
-                        // Load questions and set up quiz based on loaded state
                         loadQuestionsAndSetupQuiz(false).then(() => {
                             populatePlayerButtons();
                             updatePlayerScoresDisplay();
@@ -1012,10 +1059,10 @@
                         console.error("Error parsing saved game file:", e);
                     }
                 };
-                reader.readAsText(file); // Read the file as text
+                reader.readAsText(file);
             };
             
-            fileInput.click(); // Programmatically click the input to open file dialog
+            fileInput.click();
         });
 
     </script>
