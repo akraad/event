@@ -113,8 +113,8 @@
             font-weight: 500;
         }
         .question-text {
-            font-size: 1.15em; /* کاهش اندازه فونت */
-            font-weight: 700;
+            font-size: 1.0em; /* کاهش بیشتر اندازه فونت */
+            font-weight: 400; /* حذف ضخامت */
             color: var(--text-dark);
             margin-bottom: 25px;
             text-align: right;
@@ -173,6 +173,18 @@
             margin-bottom: 20px; /* کاهش margin */
             padding-bottom: 15px;
             border-bottom: 2px solid var(--primary-color);
+        }
+        .player-button-wrapper { /* New wrapper for button and score */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px; /* Small gap between score and button */
+        }
+        .player-score-top { /* Style for score above button */
+            font-size: 0.75em; /* Smaller font for score */
+            color: var(--secondary-color); /* Lighter color */
+            opacity: 0.8; /* Slightly transparent */
+            font-weight: 500;
         }
         .player-button {
             background-color: #e6f7ff;
@@ -393,8 +405,8 @@
         const endQuizBtn = document.getElementById('end-quiz-btn');
         const resultsSection = document.getElementById('results-section');
         const resultsList = document.getElementById('results-list');
-        const categoryMultiselect = document.getElementById('category-multiselect'); // Changed to multiselect container
-        const difficultyMultiselect = document.getElementById('difficulty-multiselect'); // Changed to multiselect container
+        const categoryMultiselect = document.getElementById('category-multiselect');
+        const difficultyMultiselect = document.getElementById('difficulty-multiselect');
         const fiftyFiftyBtn = document.getElementById('fifty-fifty-btn');
         const playerScoresDisplayBottom = document.getElementById('player-scores-display-bottom');
 
@@ -478,8 +490,10 @@
             userInputSection.style.display = 'none';
             quizSection.style.display = 'block';
             loadQuestionsAndSetupQuiz();
-            updatePlayerScoresDisplay();
-            populatePlayerButtons();
+            // Initial call to updatePlayerScoresDisplay for bottom scores
+            updatePlayerScoresDisplay(); 
+            // Initial call to populatePlayerButtons and set active player and top scores
+            populatePlayerButtons(); 
         });
 
         // --- مدیریت خواندن و نمایش سوالات ---
@@ -492,7 +506,7 @@
                 }
                 const text = await response.text();
                 allQuestions = parseQuestions(text);
-                populateCategoryFilter(); // Populates multiselect checkboxes
+                populateCategoryFilter();
                 displayNextQuestion();
             } catch (error) {
                 console.error("Error loading or parsing questions:", error);
@@ -538,7 +552,7 @@
         function populateCategoryFilter() {
             const categories = new Set();
             allQuestions.forEach(q => categories.add(q.category));
-            categoryMultiselect.innerHTML = ''; // Clear existing
+            categoryMultiselect.innerHTML = '';
             categories.forEach(cat => {
                 const label = document.createElement('label');
                 label.innerHTML = `<input type="checkbox" name="category" value="${cat}" checked> ${cat}`;
@@ -592,7 +606,7 @@
             updateFiftyFiftyButtonState();
             
             manuallySelectedPlayer = null;
-            updatePlayerButtons();
+            updatePlayerButtons(); // Update active player button
         }
 
         function handleOptionClick(event) {
@@ -636,12 +650,12 @@
                     correctOptionElement.classList.add('correct');
                 }
             }
-            updatePlayerScoresDisplay();
+            updatePlayerScoresDisplay(); // Update scores at the bottom
             
             if (!manuallySelectedPlayer) {
                 currentPlayerAutoIndex = (currentPlayerAutoIndex + 1) % playerNamesArray.length;
             }
-            updatePlayerButtons();
+            updatePlayerButtons(); // Update active player button and scores above them
         }
 
         nextQuestionBtn.addEventListener('click', displayNextQuestion);
@@ -651,6 +665,7 @@
         // --- مدیریت امتیازات و انتخاب کاربر ---
 
         function updatePlayerScoresDisplay() {
+            // Update scores at the bottom (main display)
             playerScoresDisplayBottom.innerHTML = '';
             playerNamesArray.forEach(name => {
                 const player = players[name];
@@ -663,11 +678,30 @@
                 `;
                 playerScoresDisplayBottom.appendChild(playerDiv);
             });
+
+            // Update scores above player buttons (new functionality)
+            document.querySelectorAll('.player-button-wrapper').forEach(wrapper => {
+                const playerName = wrapper.querySelector('.player-button').dataset.playerName;
+                const scoreSpan = wrapper.querySelector('.player-score-top');
+                if (players[playerName]) {
+                    const scoreDisplay = (players[playerName].score % 1 !== 0) ? players[playerName].score.toFixed(1) : players[playerName].score;
+                    scoreSpan.textContent = `امتیاز: ${scoreDisplay}`;
+                }
+            });
         }
 
         function populatePlayerButtons() {
             playerButtonsContainer.innerHTML = '';
             playerNamesArray.forEach((name, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'player-button-wrapper';
+
+                const scoreSpan = document.createElement('span');
+                scoreSpan.className = 'player-score-top';
+                // Initial score is 0, will be updated by updatePlayerScoresDisplay
+                scoreSpan.textContent = 'امتیاز: 0'; 
+                wrapper.appendChild(scoreSpan);
+
                 const button = document.createElement('button');
                 button.className = 'player-button';
                 button.textContent = name;
@@ -676,9 +710,11 @@
                     manuallySelectedPlayer = name;
                     updatePlayerButtons();
                 });
-                playerButtonsContainer.appendChild(button);
+                wrapper.appendChild(button);
+                playerButtonsContainer.appendChild(wrapper);
             });
-            updatePlayerButtons();
+            updatePlayerButtons(); // Set initial active player
+            updatePlayerScoresDisplay(); // Ensure initial scores are displayed on top buttons
         }
 
         function updatePlayerButtons() {
